@@ -122,7 +122,7 @@ Three ways to get data out of the planner, from the **Export** menu in the heade
 
 Each year-by-year data panel also has a **Download CSV** button in its header that exports whichever view is currently active. CSVs lead with the header row so spreadsheets auto-detect it, carry raw unformatted numbers, and append a metadata block after a trailing blank line.
 
-**A note on nominal vs. real dollars**: every figure the engine produces is in nominal (future) dollars. Exports keep nominal as the primary columns, add a Real column for headline figures, and include an `Inflation Factor` column so any other column can be deflated in a spreadsheet. Because tax brackets are not indexed to inflation in this model, nominal tax figures include real bracket creep — deflating them gives the present value of dollars paid, not what an indexed-bracket world would charge.
+**A note on nominal vs. real dollars**: every figure the engine produces is in nominal (future) dollars. Exports keep nominal as the primary columns, add a Real column for headline figures, and include an `Inflation Factor` column so any other column can be deflated in a spreadsheet. Tax brackets, deductions, and benefit thresholds are indexed to the assumed inflation rate, as both countries do in law, so deflated tax figures reflect constant real tax policy rather than bracket creep. The exception is the US thresholds for taxing Social Security, which are frozen by statute and stay fixed.
 
 ### User Experience
 - **Dark Mode**: Toggle between light and dark themes

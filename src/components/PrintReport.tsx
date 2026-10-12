@@ -148,10 +148,13 @@ export function PrintReport({
           <strong>Dollar amounts are nominal (future) dollars</strong> unless labelled
           &ldquo;real&rdquo; or &ldquo;today&rsquo;s dollars&rdquo;. Nominal figures include{' '}
           {percent(assumptions.inflationRate)} annual inflation, so later years look larger
-          than their purchasing power. Tax brackets are not indexed to inflation in this
-          model ({TAX_DATA_YEAR} brackets are held constant), which overstates the tax
-          burden in later years. This report provides estimates only — consult a financial
-          advisor for personalized advice.
+          than their purchasing power. Taxes start from {TAX_DATA_YEAR} brackets and
+          deductions, which rise with inflation each year as they do under current law
+          {country === 'US' && (
+            <> (the thresholds for taxing Social Security are frozen by law and stay fixed)</>
+          )}
+          . This report provides estimates only — consult a financial advisor for
+          personalized advice.
         </p>
       </header>
 

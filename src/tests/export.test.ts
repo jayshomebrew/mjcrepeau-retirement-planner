@@ -248,8 +248,8 @@ function testCsvStructure(): void {
     'Metadata records the inflation rate used'
   );
   assert(
-    metaLines.some(line => line.includes('bracket creep')),
-    'Metadata warns that nominal tax figures include bracket creep'
+    metaLines.some(line => line.includes('indexed to the inflation rate')),
+    'Metadata notes that tax brackets are indexed to inflation'
   );
 
   assertEqual(
