@@ -10,6 +10,7 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
+import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS } from './chartTheme';
 import { RetirementResult, IncomeStream } from '../types';
 import { CHART_COLORS } from '../utils/constants';
 import { useCountry } from '../contexts/CountryContext';
@@ -17,7 +18,6 @@ import { useCountry } from '../contexts/CountryContext';
 interface ChartIncomeProps {
   result: RetirementResult;
   incomeStreams?: IncomeStream[];
-  isDarkMode?: boolean;
   /**
    * Recharts reveals series by animating a clip path from zero width. The
    * print report is captured moments after mount, so animation must be off
@@ -59,51 +59,47 @@ function CustomTooltip({ active, payload, label, result, currency }: CustomToolt
   if (!yearData) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-      <p className="font-medium text-gray-900 dark:text-white mb-2">Age {label}</p>
+    <div className={TOOLTIP_CLASS}>
+      <p className="text-xs text-ink-2 mb-1.5">Age {label}</p>
       <div className="space-y-1 text-sm">
         <div className="flex justify-between gap-4">
-          <span style={{ color: CHART_COLORS.pretax }}>Withdrawals:</span>
-          <span className="font-medium text-gray-900 dark:text-white">{formatTooltipValue(yearData.totalWithdrawal, currency)}</span>
+          <span style={{ color: CHART_COLORS.pretax }}>Withdrawals</span>
+          <span className="num text-ink">{formatTooltipValue(yearData.totalWithdrawal, currency)}</span>
         </div>
         {payload?.filter(p => ['socialSecurity', 'pension', 'otherIncome', 'taxFreeIncome'].includes(p.dataKey) && p.value > 0).map(p => (
           <div key={p.dataKey} className="flex justify-between gap-4">
-            <span style={{ color: p.color }}>{p.name}:</span>
-            <span className="font-medium text-gray-900 dark:text-white">{formatTooltipValue(p.value, currency)}</span>
+            <span style={{ color: p.color }}>{p.name}</span>
+            <span className="num text-ink">{formatTooltipValue(p.value, currency)}</span>
           </div>
         ))}
-        <div className="flex justify-between gap-4 border-t border-gray-200 dark:border-gray-600 pt-1 mt-1">
-          <span className="text-gray-600 dark:text-gray-400">Gross Income:</span>
-          <span className="font-medium text-gray-900 dark:text-white">{formatTooltipValue(yearData.grossIncome, currency)}</span>
+        <div className="flex justify-between gap-4 border-t border-hair pt-1 mt-1">
+          <span className="text-ink-2">Gross income</span>
+          <span className="num text-ink">{formatTooltipValue(yearData.grossIncome, currency)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span style={{ color: CHART_COLORS.tax }}>Taxes:</span>
-          <span className="font-medium text-red-600 dark:text-red-400">
+          <span style={{ color: CHART_COLORS.tax }}>Taxes</span>
+          <span className="num text-bad">
             -{formatTooltipValue(yearData.totalTax, currency)}
             {yearData.totalPenalties > 0 && (
               <span className="text-xs"> (includes {formatTooltipValue(yearData.totalPenalties, currency)} penalties)</span>
             )}
           </span>
         </div>
-        <div className="border-t border-gray-200 dark:border-gray-600 mt-2 pt-2 flex justify-between gap-4 font-semibold">
-          <span style={{ color: CHART_COLORS.spending }}>After-Tax Income:</span>
-          <span className="text-gray-900 dark:text-white">{formatTooltipValue(yearData.afterTaxIncome, currency)}</span>
+        <div className="border-t border-hair mt-2 pt-2 flex justify-between gap-4 font-medium">
+          <span style={{ color: CHART_COLORS.spending }}>After-tax income</span>
+          <span className="num text-ink">{formatTooltipValue(yearData.afterTaxIncome, currency)}</span>
         </div>
       </div>
     </div>
   );
 }
 
-export function ChartIncome({ result, incomeStreams = [], isDarkMode = false, animate = true }: ChartIncomeProps) {
+export function ChartIncome({ result, incomeStreams = [], animate = true }: ChartIncomeProps) {
   const { country } = useCountry();
   const isCanada = country === 'CA';
   const currency = isCanada ? 'CAD' : 'USD';
   const govBenefitLabel = isCanada ? 'CPP/OAS' : 'Social Security';
 
-  // Colors based on dark mode
-  const gridColor = isDarkMode ? '#374151' : '#e5e7eb';
-  const tickColor = isDarkMode ? '#9ca3af' : '#6b7280';
-  const tickLineColor = isDarkMode ? '#4b5563' : '#d1d5db';
   // Determine which income stream bands have data
   const hasPensionStreams = incomeStreams.some(s => s.taxTreatment === 'fully_taxable');
   const hasOtherIncomeStreams = incomeStreams.some(s => s.taxTreatment === 'other_income');
@@ -154,26 +150,22 @@ export function ChartIncome({ result, incomeStreams = [], isDarkMode = false, an
     <div className="w-full h-80 touch-pan-y">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+          <CartesianGrid vertical={false} stroke={CHART_THEME.grid} />
           <XAxis
             dataKey="age"
-            tick={{ fontSize: 12, fill: tickColor }}
-            tickLine={{ stroke: tickLineColor }}
-            stroke={tickLineColor}
+            {...AXIS_PROPS}
           />
           <YAxis
             tickFormatter={formatCurrency}
-            tick={{ fontSize: 12, fill: tickColor }}
-            tickLine={{ stroke: tickLineColor }}
-            stroke={tickLineColor}
+            {...AXIS_PROPS}
             width={60}
           />
-          <Tooltip content={<CustomTooltip result={result} currency={currency} />} />
+          <Tooltip content={<CustomTooltip result={result} currency={currency} />} cursor={BAR_CURSOR} />
           <Legend
             wrapperStyle={{ paddingTop: '10px' }}
-            formatter={(value) => <span style={{ color: tickColor }}>{value}</span>}
+            formatter={(value) => <span style={{ color: CHART_THEME.legend }}>{value}</span>}
           />
-          <ReferenceLine y={0} stroke="#9ca3af" />
+          <ReferenceLine y={0} stroke={CHART_THEME.axis} />
           {/* Gross income components - stacked bars */}
           <Bar
             isAnimationActive={animate}
@@ -181,7 +173,7 @@ export function ChartIncome({ result, incomeStreams = [], isDarkMode = false, an
             name="Withdrawals"
             stackId="income"
             fill={CHART_COLORS.pretax}
-            fillOpacity={0.8}
+            fillOpacity={0.85}
           />
           <Bar
             isAnimationActive={animate}
@@ -189,7 +181,7 @@ export function ChartIncome({ result, incomeStreams = [], isDarkMode = false, an
             name={govBenefitLabel}
             stackId="income"
             fill={CHART_COLORS.socialSecurity}
-            fillOpacity={0.8}
+            fillOpacity={0.85}
           />
           {hasPensionStreams && (
             <Bar
@@ -198,27 +190,27 @@ export function ChartIncome({ result, incomeStreams = [], isDarkMode = false, an
               name="Pension"
               stackId="income"
               fill={CHART_COLORS.pension}
-              fillOpacity={0.8}
+              fillOpacity={0.85}
             />
           )}
           {hasOtherIncomeStreams && (
             <Bar
               isAnimationActive={animate}
               dataKey="otherIncome"
-              name="Other Income"
+              name="Other income"
               stackId="income"
               fill={CHART_COLORS.otherIncome}
-              fillOpacity={0.8}
+              fillOpacity={0.85}
             />
           )}
           {hasTaxFreeStreams && (
             <Bar
               isAnimationActive={animate}
               dataKey="taxFreeIncome"
-              name="Tax-Free Income"
+              name="Tax-free income"
               stackId="income"
               fill={CHART_COLORS.taxFreeIncome}
-              fillOpacity={0.8}
+              fillOpacity={0.85}
             />
           )}
           {/* After-tax income line - the key metric */}
@@ -226,7 +218,7 @@ export function ChartIncome({ result, incomeStreams = [], isDarkMode = false, an
             isAnimationActive={animate}
             type="monotone"
             dataKey="afterTax"
-            name="After-Tax Income"
+            name="After-tax income"
             stroke={CHART_COLORS.spending}
             strokeWidth={3}
             dot={false}
@@ -236,7 +228,7 @@ export function ChartIncome({ result, incomeStreams = [], isDarkMode = false, an
             isAnimationActive={animate}
             type="monotone"
             dataKey="taxes"
-            name="Taxes Paid"
+            name="Taxes paid"
             stroke={CHART_COLORS.tax}
             strokeWidth={2}
             strokeDasharray="5 5"

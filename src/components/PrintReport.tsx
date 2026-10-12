@@ -41,7 +41,7 @@ function PrintTable({ table }: { table: ExportTable }) {
 
   return (
     <div className="print-block mb-6">
-      <h3 className="text-base font-semibold text-gray-900 mb-2">{table.title}</h3>
+      <h3 className="font-serif text-base font-bold text-gray-900 mb-2">{table.title}</h3>
       <table className="w-full text-[10px] border-collapse">
         <thead>
           <tr className="border-b-2 border-gray-400">
@@ -64,7 +64,7 @@ function PrintTable({ table }: { table: ExportTable }) {
                 <td
                   key={column.key}
                   className={`py-0.5 px-1 text-gray-700 ${
-                    column.type === 'text' ? 'text-left' : 'text-right tabular-nums'
+                    column.type === 'text' ? 'text-left' : 'text-right num'
                   }`}
                 >
                   {formatCell(row[column.key], column.type, currency)}
@@ -80,7 +80,7 @@ function PrintTable({ table }: { table: ExportTable }) {
                 <td
                   key={column.key}
                   className={`py-1 px-1 text-gray-900 ${
-                    column.type === 'text' ? 'text-left' : 'text-right tabular-nums'
+                    column.type === 'text' ? 'text-left' : 'text-right num'
                   }`}
                 >
                   {formatCell(table.footer![column.key], column.type, currency)}
@@ -97,7 +97,7 @@ function PrintTable({ table }: { table: ExportTable }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="print-section">
-      <h2 className="text-lg font-bold text-gray-900 border-b-2 border-gray-800 pb-1 mb-4">
+      <h2 className="font-serif text-xl font-bold text-gray-900 border-b-2 border-gray-800 pb-1 mb-4">
         {title}
       </h2>
       {children}
@@ -109,7 +109,7 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4 py-1 border-b border-gray-200 text-sm">
       <span className="text-gray-600">{label}</span>
-      <span className="font-medium text-gray-900 tabular-nums">{value}</span>
+      <span className="num text-gray-900">{value}</span>
     </div>
   );
 }
@@ -139,7 +139,7 @@ export function PrintReport({
     <div className="print-report bg-white text-gray-900">
       {/* Cover */}
       <header className="print-block mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Retirement Plan</h1>
+        <h1 className="font-serif text-3xl font-bold text-gray-900">Retirement plan</h1>
         <p className="text-sm text-gray-600 mt-1">
           Generated {dateLabel} · {country === 'CA' ? 'Canada' : 'United States'} ·{' '}
           {meta.currency}
@@ -195,47 +195,49 @@ export function PrintReport({
       </Section>
 
       <Section title="Summary">
-        {/* SummaryCards lays out up to 4 columns at the `md` breakpoint, which
-            keys off the viewport rather than this 720px container. See the
-            .print-summary rule in index.css. */}
+        {/* The summary tiles lay out in up to 4 columns at the `md` breakpoint,
+            which keys off the viewport rather than this 720px container. See
+            the .print-summary rule in index.css. */}
         <div className="print-summary">
           <SummaryCards
+            accounts={accounts}
             profile={profile}
             assumptions={assumptions}
+            incomeStreams={incomeStreams}
             accumulationResult={accumulation}
             retirementResult={retirement}
           />
         </div>
         <div className="print-block mt-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">
+          <h3 className="font-serif text-base font-bold text-gray-900 mb-2">
             Portfolio Composition at Retirement
           </h3>
-          <ChartComposition accounts={accounts} result={accumulation} isDarkMode={false} animate={false} />
+          <ChartComposition accounts={accounts} result={accumulation} animate={false} />
         </div>
       </Section>
 
       <Section title="Accumulation Phase">
         <div className="print-block mb-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">
+          <h3 className="font-serif text-base font-bold text-gray-900 mb-2">
             Account Growth (Age {profile.currentAge} to {profile.retirementAge})
           </h3>
-          <ChartAccumulation accounts={accounts} result={accumulation} isDarkMode={false} animate={false} />
+          <ChartAccumulation accounts={accounts} result={accumulation} animate={false} />
         </div>
         <PrintTable table={buildAccumulationTable('summary', accounts, accumulation, meta)} />
       </Section>
 
       <Section title="Retirement Phase">
         <div className="print-block mb-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">
+          <h3 className="font-serif text-base font-bold text-gray-900 mb-2">
             Portfolio Drawdown (Age {profile.retirementAge} to {profile.lifeExpectancy})
           </h3>
-          <ChartDrawdown accounts={accounts} result={retirement} isDarkMode={false} animate={false} />
+          <ChartDrawdown accounts={accounts} result={retirement} animate={false} />
         </div>
         <div className="print-block mb-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">
+          <h3 className="font-serif text-base font-bold text-gray-900 mb-2">
             Annual Retirement Income
           </h3>
-          <ChartIncome result={retirement} incomeStreams={incomeStreams} isDarkMode={false} animate={false} />
+          <ChartIncome result={retirement} incomeStreams={incomeStreams} animate={false} />
         </div>
         <PrintTable
           table={buildWithdrawalTable('income', accounts, retirement, incomeStreams, meta)}
@@ -244,8 +246,8 @@ export function PrintReport({
 
       <Section title="Taxes">
         <div className="print-block mb-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">Tax Burden Over Time</h3>
-          <ChartTax result={retirement} isDarkMode={false} animate={false} />
+          <h3 className="font-serif text-base font-bold text-gray-900 mb-2">Tax Burden Over Time</h3>
+          <ChartTax result={retirement} animate={false} />
         </div>
         <PrintTable
           table={buildWithdrawalTable('taxes', accounts, retirement, incomeStreams, meta)}

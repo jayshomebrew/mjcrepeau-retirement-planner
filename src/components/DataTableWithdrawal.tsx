@@ -12,6 +12,8 @@ import { CHART_COLORS } from '../utils/constants';
 import { useCountry } from '../contexts/CountryContext';
 import { buildExportMeta, buildWithdrawalTable } from '../utils/export';
 import { CsvDownloadButton } from './CsvDownloadButton';
+import { Figure } from './Figure';
+import { SegmentedControl } from './SegmentedControl';
 
 interface DataTableWithdrawalProps {
   accounts: Account[];
@@ -35,6 +37,39 @@ function formatPercent(value: number): string {
 }
 
 type ViewMode = 'income' | 'withdrawals' | 'balances' | 'taxes' | 'incomeStreams';
+
+const VIEW_OPTIONS: { id: ViewMode; label: string }[] = [
+  { id: 'income', label: 'Income and spending' },
+  { id: 'withdrawals', label: 'Withdrawals by account' },
+  { id: 'balances', label: 'Remaining balances' },
+  { id: 'taxes', label: 'Tax details' },
+  { id: 'incomeStreams', label: 'Income streams' },
+];
+
+/*
+ * Booktabs-style table set on the paper: a heavier rule above the header and
+ * below the last row, a stronger rule under the header, hairlines between
+ * rows, no vertical lines. Rules sit on the cells (border-separate) rather
+ * than the rows so the sticky age column carries its own rules when the table
+ * scrolls sideways.
+ */
+const TABLE = 'min-w-full border-separate border-spacing-0 border-y-[1.5px] border-ink/60 text-sm';
+const TBODY = '[&>tr:last-child>td]:border-b-0';
+const ROW = 'group hover:bg-hover';
+const CELL = 'py-2 px-2';
+// The age column stays put while the rest scrolls under it, so it needs an
+// opaque fill; bg-page repeats the viewport-fixed page texture so the column
+// blends into the page. The row's hover wash sits beneath that fill, so it is
+// layered back on top as a background image.
+const STICKY = 'sticky left-0 bg-page';
+const STICKY_HOVER = 'group-hover:bg-[linear-gradient(var(--hover),var(--hover))]';
+
+const TH = `${CELL} align-bottom text-xs font-medium border-b border-hair-strong`;
+const TH_AGE = `${TH} ${STICKY} text-left text-ink-2`;
+const TD = `${CELL} num text-[15px] border-b border-hair`;
+const TD_AGE = `${TD} ${STICKY} ${STICKY_HOVER} text-left text-ink`;
+const TF = `${CELL} num text-[15px] font-semibold border-t border-hair-strong`;
+const TF_LABEL = `${CELL} ${STICKY} text-left text-sm font-semibold text-ink border-t border-hair-strong`;
 
 export function DataTableWithdrawal({
   accounts,
@@ -78,10 +113,10 @@ export function DataTableWithdrawal({
   const getColorClass = (accountType: Account['type']): string => {
     const treatment = getTaxTreatment(accountType);
     switch (treatment) {
-      case 'pretax': return 'text-blue-600 dark:text-blue-400';
-      case 'roth': return 'text-green-600 dark:text-green-400';
-      case 'taxable': return 'text-amber-600 dark:text-amber-400';
-      case 'hsa': return 'text-purple-600 dark:text-purple-400';
+      case 'pretax': return 'text-pretax';
+      case 'roth': return 'text-roth';
+      case 'taxable': return 'text-taxable';
+      case 'hsa': return 'text-hsa';
     }
   };
 
@@ -96,149 +131,95 @@ export function DataTableWithdrawal({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-      {/* The CSV button sits beside the toggle, so the header is a row of
-          siblings rather than one full-width button — a button cannot nest. */}
-      <div className="w-full px-4 py-3 flex items-center gap-2 rounded-t-lg">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 flex-1 min-w-0 text-left px-1 -mx-1 py-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
-        >
-          <svg
-            className="w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+    <Figure
+      title="Year-by-year data"
+      actions={
+        <div className="flex items-center gap-2">
+          {isExpanded && <CsvDownloadButton getTable={buildCsvTable} />}
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+            aria-label="Year-by-year data"
+            title={isExpanded ? 'Hide table' : 'Show table'}
+            className="icon-btn"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <span className="font-medium text-gray-900 dark:text-white truncate">Year-by-Year Data</span>
-        </button>
-
-        {isExpanded && (
-          <div className="shrink-0">
-            <CsvDownloadButton getTable={buildCsvTable} />
-          </div>
-        )}
-
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          aria-label={isExpanded ? 'Collapse year-by-year data' : 'Expand year-by-year data'}
-          className="shrink-0 p-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
-        >
-          <svg
-            className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-      </div>
-
+            <svg
+              className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+      }
+    >
       {isExpanded && (
-        <div className="px-4 pb-4">
-          {/* View Mode Tabs */}
-          <div className="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto items-center">
-            <button
-              onClick={() => setViewMode('income')}
-              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-                viewMode === 'income'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Income & Spending
-            </button>
-            <button
-              onClick={() => setViewMode('withdrawals')}
-              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-                viewMode === 'withdrawals'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Withdrawals by Account
-            </button>
-            <button
-              onClick={() => setViewMode('balances')}
-              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-                viewMode === 'balances'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Remaining Balances
-            </button>
-            <button
-              onClick={() => setViewMode('taxes')}
-              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-                viewMode === 'taxes'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Tax Details
-            </button>
-            <button
-              onClick={() => setViewMode('incomeStreams')}
-              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-                viewMode === 'incomeStreams'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Income Streams
-            </button>
+        <>
+          {/* Scrolls sideways on narrow screens; the padding keeps focus rings unclipped. */}
+          <div className="-mx-1 -mt-1 mb-3 p-1 overflow-x-auto scrollbar-hide">
+            <SegmentedControl
+              size="sm"
+              label="Table view"
+              options={VIEW_OPTIONS}
+              value={viewMode}
+              onChange={setViewMode}
+            />
           </div>
 
-          <div className="overflow-x-auto">
+          <div
+            role="tabpanel"
+            aria-label={VIEW_OPTIONS.find(o => o.id === viewMode)?.label}
+            className="overflow-x-auto"
+          >
             {viewMode === 'income' && (
-              <table className="min-w-full text-sm">
+              <table className={TABLE}>
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800">Age</th>
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Target Spending</th>
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Withdrawals</th>
-                    <th className="text-right py-2 px-2 font-medium" style={{ color: CHART_COLORS.retirementIncome }}>Retirement Income</th>
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Gross Income</th>
-                    <th className="text-right py-2 px-2 font-medium text-red-600 dark:text-red-400">Total Taxes</th>
-                    <th className="text-right py-2 px-2 font-medium text-teal-600 dark:text-teal-400">After-Tax Income</th>
+                  <tr>
+                    <th className={TH_AGE}>Age</th>
+                    <th className={`${TH} text-right text-ink-2`}>Target spending</th>
+                    <th className={`${TH} text-right text-ink-2`}>Withdrawals</th>
+                    <th className={`${TH} text-right`} style={{ color: CHART_COLORS.retirementIncome }}>Retirement income</th>
+                    <th className={`${TH} text-right text-ink-2`}>Gross income</th>
+                    <th className={`${TH} text-right text-tax`}>Total taxes</th>
+                    <th className={`${TH} text-right text-spending`}>After-tax income</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className={TBODY}>
                   {result.yearlyWithdrawals.map((yearData) => (
-                    <tr key={yearData.age} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="py-2 px-2 font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800">{yearData.age}</td>
-                      <td className="py-2 px-2 text-right font-mono text-gray-600 dark:text-gray-400">{formatCurrency(yearData.targetSpending)}</td>
-                      <td className="py-2 px-2 text-right font-mono text-gray-900 dark:text-white">{formatCurrency(yearData.totalWithdrawal)}</td>
-                      <td className="py-2 px-2 text-right font-mono" style={{ color: CHART_COLORS.retirementIncome }}>
+                    <tr key={yearData.age} className={ROW}>
+                      <td className={TD_AGE}>{yearData.age}</td>
+                      <td className={`${TD} text-right text-ink-2`}>{formatCurrency(yearData.targetSpending)}</td>
+                      <td className={`${TD} text-right text-ink`}>{formatCurrency(yearData.totalWithdrawal)}</td>
+                      <td className={`${TD} text-right`} style={{ color: CHART_COLORS.retirementIncome }}>
                         {(yearData.governmentBenefitIncome + yearData.incomeStreamIncome) > 0 ? formatCurrency(yearData.governmentBenefitIncome + yearData.incomeStreamIncome) : '-'}
                       </td>
-                      <td className="py-2 px-2 text-right font-mono text-gray-900 dark:text-white">{formatCurrency(yearData.grossIncome)}</td>
-                      <td className="py-2 px-2 text-right font-mono text-red-600 dark:text-red-400">{formatCurrency(yearData.totalTax)}</td>
-                      <td className="py-2 px-2 text-right font-mono text-teal-600 dark:text-teal-400">{formatCurrency(yearData.afterTaxIncome)}</td>
+                      <td className={`${TD} text-right text-ink`}>{formatCurrency(yearData.grossIncome)}</td>
+                      <td className={`${TD} text-right text-tax`}>{formatCurrency(yearData.totalTax)}</td>
+                      <td className={`${TD} text-right text-spending`}>{formatCurrency(yearData.afterTaxIncome)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900">
-                    <td className="py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-gray-50 dark:bg-gray-900">Lifetime Total</td>
-                    <td className="py-2 px-2 text-right font-mono text-gray-600 dark:text-gray-400">-</td>
-                    <td className="py-2 px-2 text-right font-mono font-medium text-gray-900 dark:text-white">
+                  <tr>
+                    <td className={TF_LABEL}>Lifetime total</td>
+                    <td className={`${TF} text-right text-ink-2`}>-</td>
+                    <td className={`${TF} text-right text-ink`}>
                       {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.totalWithdrawal, 0))}
                     </td>
-                    <td className="py-2 px-2 text-right font-mono font-medium" style={{ color: CHART_COLORS.retirementIncome }}>
+                    <td className={`${TF} text-right`} style={{ color: CHART_COLORS.retirementIncome }}>
                       {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.governmentBenefitIncome + y.incomeStreamIncome, 0))}
                     </td>
-                    <td className="py-2 px-2 text-right font-mono font-medium text-gray-900 dark:text-white">
+                    <td className={`${TF} text-right text-ink`}>
                       {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.grossIncome, 0))}
                     </td>
-                    <td className="py-2 px-2 text-right font-mono font-medium text-red-600 dark:text-red-400">
+                    <td className={`${TF} text-right text-tax`}>
                       {formatCurrency(result.lifetimeTaxesPaid)}
                     </td>
-                    <td className="py-2 px-2 text-right font-mono font-medium text-teal-600 dark:text-teal-400">
+                    <td className={`${TF} text-right text-spending`}>
                       {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.afterTaxIncome, 0))}
                     </td>
                   </tr>
@@ -247,32 +228,32 @@ export function DataTableWithdrawal({
             )}
 
             {viewMode === 'withdrawals' && (
-              <table className="min-w-full text-sm">
+              <table className={TABLE}>
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800">Age</th>
-                    <th className="text-right py-2 px-2 font-medium text-blue-600 dark:text-blue-400">RMD</th>
+                  <tr>
+                    <th className={TH_AGE}>Age</th>
+                    <th className={`${TH} text-right text-pretax`}>RMD</th>
                     {accounts.map(acc => (
-                      <th key={acc.id} className={`text-right py-2 px-2 font-medium ${getColorClass(acc.type)}`}>
+                      <th key={acc.id} className={`${TH} text-right ${getColorClass(acc.type)}`}>
                         {acc.name}
                       </th>
                     ))}
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Total</th>
+                    <th className={`${TH} text-right text-ink-2`}>Total</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className={TBODY}>
                   {result.yearlyWithdrawals.map((yearData) => (
-                    <tr key={yearData.age} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="py-2 px-2 font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800">{yearData.age}</td>
-                      <td className="py-2 px-2 text-right font-mono text-blue-600 dark:text-blue-400">
+                    <tr key={yearData.age} className={ROW}>
+                      <td className={TD_AGE}>{yearData.age}</td>
+                      <td className={`${TD} text-right text-pretax`}>
                         {yearData.rmdAmount > 0 ? formatCurrency(yearData.rmdAmount) : '-'}
                       </td>
                       {accounts.map(acc => (
-                        <td key={acc.id} className="py-2 px-2 text-right font-mono text-gray-600 dark:text-gray-400">
+                        <td key={acc.id} className={`${TD} text-right text-ink-2`}>
                           {(yearData.withdrawals[acc.id] || 0) > 0 ? formatCurrency(yearData.withdrawals[acc.id] || 0) : '-'}
                         </td>
                       ))}
-                      <td className="py-2 px-2 text-right font-mono font-medium text-gray-900 dark:text-white">
+                      <td className={`${TD} text-right text-ink`}>
                         {formatCurrency(yearData.totalWithdrawal)}
                       </td>
                     </tr>
@@ -282,28 +263,28 @@ export function DataTableWithdrawal({
             )}
 
             {viewMode === 'balances' && (
-              <table className="min-w-full text-sm">
+              <table className={TABLE}>
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800">Age</th>
+                  <tr>
+                    <th className={TH_AGE}>Age</th>
                     {accounts.map(acc => (
-                      <th key={acc.id} className={`text-right py-2 px-2 font-medium ${getColorClass(acc.type)}`}>
+                      <th key={acc.id} className={`${TH} text-right ${getColorClass(acc.type)}`}>
                         {acc.name}
                       </th>
                     ))}
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Total</th>
+                    <th className={`${TH} text-right text-ink-2`}>Total</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className={TBODY}>
                   {result.yearlyWithdrawals.map((yearData) => (
-                    <tr key={yearData.age} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="py-2 px-2 font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800">{yearData.age}</td>
+                    <tr key={yearData.age} className={ROW}>
+                      <td className={TD_AGE}>{yearData.age}</td>
                       {accounts.map(acc => (
-                        <td key={acc.id} className="py-2 px-2 text-right font-mono text-gray-600 dark:text-gray-400">
+                        <td key={acc.id} className={`${TD} text-right text-ink-2`}>
                           {formatCurrency(yearData.remainingBalances[acc.id] || 0)}
                         </td>
                       ))}
-                      <td className="py-2 px-2 text-right font-mono font-medium text-gray-900 dark:text-white">
+                      <td className={`${TD} text-right text-ink`}>
                         {formatCurrency(yearData.totalRemainingBalance)}
                       </td>
                     </tr>
@@ -313,61 +294,70 @@ export function DataTableWithdrawal({
             )}
 
             {viewMode === 'taxes' && (
-              <table className="min-w-full text-sm">
+              <table className={TABLE}>
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800">Age</th>
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Gross Income</th>
-                    <th className="text-right py-2 px-2 font-medium text-red-600 dark:text-red-400">Federal Tax</th>
-                    <th className="text-right py-2 px-2 font-medium text-orange-600 dark:text-orange-400">State Tax</th>
-                    <th className="text-right py-2 px-2 font-medium text-red-600 dark:text-red-400">Penalties</th>
-                    <th className="text-right py-2 px-2 font-medium text-red-600 dark:text-red-400">Total Tax</th>
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Effective Rate</th>
+                  <tr>
+                    <th className={TH_AGE}>Age</th>
+                    <th className={`${TH} text-right text-ink-2`}>Gross income</th>
+                    <th className={`${TH} text-right text-tax`}>Federal tax</th>
+                    <th className={`${TH} text-right text-tax`}>State tax</th>
+                    <th className={`${TH} text-right text-bad`}>Penalties</th>
+                    <th className={`${TH} text-right text-tax`}>Total tax</th>
+                    <th className={`${TH} text-right text-ink-2`}>Effective rate</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className={TBODY}>
                   {result.yearlyWithdrawals.map((yearData) => {
                     const effectiveRate = yearData.grossIncome > 0 ? yearData.totalTax / yearData.grossIncome : 0;
                     const hasPenalties = yearData.totalPenalties > 0;
+                    const hasPenaltyDetails = yearData.earlyWithdrawalPenalties.length > 0;
                     const isPenaltyExpanded = expandedPenaltyRows.has(yearData.age);
                     return (
                       // The key belongs on the fragment, not the inner rows —
                       // React never sees a keyed child otherwise.
                       <Fragment key={yearData.age}>
-                        <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                          <td className="py-2 px-2 font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800">{yearData.age}</td>
-                          <td className="py-2 px-2 text-right font-mono text-gray-900 dark:text-white">{formatCurrency(yearData.grossIncome)}</td>
-                          <td className="py-2 px-2 text-right font-mono text-red-600 dark:text-red-400">{formatCurrency(yearData.federalTax)}</td>
-                          <td className="py-2 px-2 text-right font-mono text-orange-600 dark:text-orange-400">{formatCurrency(yearData.stateTax)}</td>
-                          <td className="py-2 px-2 text-right font-mono text-red-600 dark:text-red-500 font-medium">
+                        <tr className={ROW}>
+                          <td className={TD_AGE}>{yearData.age}</td>
+                          <td className={`${TD} text-right text-ink`}>{formatCurrency(yearData.grossIncome)}</td>
+                          <td className={`${TD} text-right text-tax`}>{formatCurrency(yearData.federalTax)}</td>
+                          <td className={`${TD} text-right text-tax`}>{formatCurrency(yearData.stateTax)}</td>
+                          <td className={`${TD} text-right text-bad`}>
                             {hasPenalties ? (
                               <button
+                                type="button"
                                 onClick={() => togglePenaltyRow(yearData.age)}
-                                className="hover:underline cursor-pointer"
+                                aria-expanded={hasPenaltyDetails ? isPenaltyExpanded : undefined}
+                                className="inline-flex items-center gap-1 hover:underline cursor-pointer"
                               >
                                 {formatCurrency(yearData.totalPenalties)}
-                                {yearData.earlyWithdrawalPenalties.length > 0 && (
-                                  <span className="ml-1 text-xs">
-                                    {isPenaltyExpanded ? '▼' : '▶'}
-                                  </span>
+                                {hasPenaltyDetails && (
+                                  <svg
+                                    className={`w-3 h-3 transition-transform ${isPenaltyExpanded ? 'rotate-90' : ''}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                  </svg>
                                 )}
                               </button>
                             ) : (
                               '-'
                             )}
                           </td>
-                          <td className="py-2 px-2 text-right font-mono text-red-600 dark:text-red-400">{formatCurrency(yearData.totalTax)}</td>
-                          <td className="py-2 px-2 text-right font-mono text-gray-600 dark:text-gray-400">{formatPercent(effectiveRate)}</td>
+                          <td className={`${TD} text-right text-tax`}>{formatCurrency(yearData.totalTax)}</td>
+                          <td className={`${TD} text-right text-ink-2`}>{formatPercent(effectiveRate)}</td>
                         </tr>
-                        {hasPenalties && isPenaltyExpanded && yearData.earlyWithdrawalPenalties.length > 0 && (
-                          <tr className="border-b border-gray-100 dark:border-gray-800 bg-red-50 dark:bg-red-900/10">
-                            <td colSpan={7} className="py-2 px-2">
-                              <div className="pl-4 border-l-2 border-red-300 dark:border-red-700">
-                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Early Withdrawal Penalty Details:</p>
+                        {hasPenalties && isPenaltyExpanded && hasPenaltyDetails && (
+                          <tr>
+                            <td colSpan={7} className={`${CELL} border-b border-hair bg-bad/10`}>
+                              <div className="pl-4 border-l-2 border-bad/40 space-y-1">
+                                <p className="text-xs font-medium text-ink-2">Early withdrawal penalty details</p>
                                 {yearData.earlyWithdrawalPenalties.map((penalty, idx) => (
-                                  <div key={idx} className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                  <div key={idx} className="flex justify-between gap-4 text-xs text-ink-2">
                                     <span>{penalty.accountName}</span>
-                                    <span className="text-red-600 dark:text-red-500 font-medium">
+                                    <span className="num text-[13px] text-bad">
                                       {formatCurrency(penalty.amount)}
                                     </span>
                                   </div>
@@ -381,24 +371,24 @@ export function DataTableWithdrawal({
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900">
-                    <td className="py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-gray-50 dark:bg-gray-900">Lifetime Total</td>
-                    <td className="py-2 px-2 text-right font-mono font-medium text-gray-900 dark:text-white">
+                  <tr>
+                    <td className={TF_LABEL}>Lifetime total</td>
+                    <td className={`${TF} text-right text-ink`}>
                       {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.grossIncome, 0))}
                     </td>
-                    <td className="py-2 px-2 text-right font-mono font-medium text-red-600 dark:text-red-400">
+                    <td className={`${TF} text-right text-tax`}>
                       {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.federalTax, 0))}
                     </td>
-                    <td className="py-2 px-2 text-right font-mono font-medium text-orange-600 dark:text-orange-400">
+                    <td className={`${TF} text-right text-tax`}>
                       {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.stateTax, 0))}
                     </td>
-                    <td className="py-2 px-2 text-right font-mono font-medium text-red-600 dark:text-red-500">
+                    <td className={`${TF} text-right text-bad`}>
                       {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.totalPenalties, 0))}
                     </td>
-                    <td className="py-2 px-2 text-right font-mono font-medium text-red-600 dark:text-red-400">
+                    <td className={`${TF} text-right text-tax`}>
                       {formatCurrency(result.lifetimeTaxesPaid)}
                     </td>
-                    <td className="py-2 px-2 text-right font-mono text-gray-600 dark:text-gray-400">
+                    <td className={`${TF} text-right text-ink-2`}>
                       {formatPercent(
                         result.lifetimeTaxesPaid /
                         result.yearlyWithdrawals.reduce((sum, y) => sum + y.grossIncome, 0)
@@ -410,49 +400,49 @@ export function DataTableWithdrawal({
             )}
 
             {viewMode === 'incomeStreams' && incomeStreams.length > 0 && (
-              <table className="min-w-full text-sm">
+              <table className={TABLE}>
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800">Age</th>
+                  <tr>
+                    <th className={TH_AGE}>Age</th>
                     {incomeStreams.map(stream => (
-                      <th key={stream.id} className="text-right py-2 px-2 font-medium" style={{ color: getStreamColor(stream.taxTreatment) }}>
+                      <th key={stream.id} className={`${TH} text-right`} style={{ color: getStreamColor(stream.taxTreatment) }}>
                         {stream.name}
                       </th>
                     ))}
                     {result.yearlyWithdrawals.some(y => y.governmentBenefitIncome > 0) && (
-                      <th className="text-right py-2 px-2 font-medium" style={{ color: CHART_COLORS.socialSecurity }}>
-                        Gov. Benefits
+                      <th className={`${TH} text-right`} style={{ color: CHART_COLORS.socialSecurity }}>
+                        Gov. benefits
                       </th>
                     )}
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Total</th>
+                    <th className={`${TH} text-right text-ink-2`}>Total</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className={TBODY}>
                   {result.yearlyWithdrawals.map((yearData) => {
                     const activeStreams = incomeStreams.filter(s => yearData.age >= s.startAge && (!s.endAge || yearData.age <= s.endAge));
                     const totalMonthly = activeStreams.reduce((sum, s) => sum + s.monthlyAmount, 0);
 
                     return (
-                      <tr key={yearData.age} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <td className="py-2 px-2 font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800">{yearData.age}</td>
+                      <tr key={yearData.age} className={ROW}>
+                        <td className={TD_AGE}>{yearData.age}</td>
                         {incomeStreams.map(stream => {
                           if (yearData.age < stream.startAge || (stream.endAge && yearData.age > stream.endAge) || totalMonthly === 0) {
-                            return <td key={stream.id} className="py-2 px-2 text-right font-mono text-gray-400 dark:text-gray-600">-</td>;
+                            return <td key={stream.id} className={`${TD} text-right text-ink-2`}>-</td>;
                           }
                           const ratio = stream.monthlyAmount / totalMonthly;
                           const amount = yearData.incomeStreamIncome * ratio;
                           return (
-                            <td key={stream.id} className="py-2 px-2 text-right font-mono" style={{ color: getStreamColor(stream.taxTreatment) }}>
+                            <td key={stream.id} className={`${TD} text-right`} style={{ color: getStreamColor(stream.taxTreatment) }}>
                               {formatCurrency(amount)}
                             </td>
                           );
                         })}
                         {result.yearlyWithdrawals.some(y => y.governmentBenefitIncome > 0) && (
-                          <td className="py-2 px-2 text-right font-mono text-gray-600 dark:text-gray-400">
+                          <td className={`${TD} text-right text-ink-2`}>
                             {yearData.governmentBenefitIncome > 0 ? formatCurrency(yearData.governmentBenefitIncome) : '-'}
                           </td>
                         )}
-                        <td className="py-2 px-2 text-right font-mono font-medium text-gray-900 dark:text-white">
+                        <td className={`${TD} text-right text-ink`}>
                           {(yearData.governmentBenefitIncome + yearData.incomeStreamIncome) > 0
                             ? formatCurrency(yearData.governmentBenefitIncome + yearData.incomeStreamIncome)
                             : '-'}
@@ -462,8 +452,8 @@ export function DataTableWithdrawal({
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900">
-                    <td className="py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-gray-50 dark:bg-gray-900">Lifetime Total</td>
+                  <tr>
+                    <td className={TF_LABEL}>Lifetime total</td>
                     {incomeStreams.map(stream => {
                       const total = result.yearlyWithdrawals.reduce((sum, yearData) => {
                         const activeStreams = incomeStreams.filter(s => yearData.age >= s.startAge && (!s.endAge || yearData.age <= s.endAge));
@@ -472,17 +462,17 @@ export function DataTableWithdrawal({
                         return sum + yearData.incomeStreamIncome * (stream.monthlyAmount / totalMonthly);
                       }, 0);
                       return (
-                        <td key={stream.id} className="py-2 px-2 text-right font-mono font-medium" style={{ color: getStreamColor(stream.taxTreatment) }}>
+                        <td key={stream.id} className={`${TF} text-right`} style={{ color: getStreamColor(stream.taxTreatment) }}>
                           {formatCurrency(total)}
                         </td>
                       );
                     })}
                     {result.yearlyWithdrawals.some(y => y.governmentBenefitIncome > 0) && (
-                      <td className="py-2 px-2 text-right font-mono font-medium text-gray-600 dark:text-gray-400">
+                      <td className={`${TF} text-right text-ink-2`}>
                         {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.governmentBenefitIncome, 0))}
                       </td>
                     )}
-                    <td className="py-2 px-2 text-right font-mono font-medium text-gray-900 dark:text-white">
+                    <td className={`${TF} text-right text-ink`}>
                       {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.governmentBenefitIncome + y.incomeStreamIncome, 0))}
                     </td>
                   </tr>
@@ -491,55 +481,55 @@ export function DataTableWithdrawal({
             )}
 
             {viewMode === 'incomeStreams' && incomeStreams.length === 0 && (
-              <p className="text-gray-500 dark:text-gray-400 text-sm py-8 text-center">
-                No income streams configured. Add Social Security, pensions, or other income in the Income Streams panel.
+              <p className="text-ink-2 text-sm py-8 text-center">
+                No income streams configured. Add Social Security, pensions, or other income in the Income streams panel.
               </p>
             )}
           </div>
 
           {/* Legend */}
-          <div className="mt-4 flex flex-wrap gap-4 text-xs">
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-blue-500"></span>
-              <span className="text-gray-600 dark:text-gray-400">Pre-tax (RMD required)</span>
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-ink-2">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-pretax" aria-hidden="true"></span>
+              <span>Pre-tax (RMD required)</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-green-500"></span>
-              <span className="text-gray-600 dark:text-gray-400">Roth (tax-free)</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-roth" aria-hidden="true"></span>
+              <span>Roth (tax-free)</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-amber-500"></span>
-              <span className="text-gray-600 dark:text-gray-400">Taxable (capital gains)</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-taxable" aria-hidden="true"></span>
+              <span>Taxable (capital gains)</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-purple-500"></span>
-              <span className="text-gray-600 dark:text-gray-400">HSA</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-hsa" aria-hidden="true"></span>
+              <span>HSA</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded" style={{ backgroundColor: CHART_COLORS.socialSecurity }}></span>
-              <span className="text-gray-600 dark:text-gray-400">Social Security</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.socialSecurity }} aria-hidden="true"></span>
+              <span>Social Security</span>
             </div>
             {incomeStreams.some(s => s.taxTreatment === 'fully_taxable') && (
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded" style={{ backgroundColor: CHART_COLORS.pension }}></span>
-                <span className="text-gray-600 dark:text-gray-400">Pension / Annuity</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.pension }} aria-hidden="true"></span>
+                <span>Pension / annuity</span>
               </div>
             )}
             {incomeStreams.some(s => s.taxTreatment === 'other_income') && (
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded" style={{ backgroundColor: CHART_COLORS.otherIncome }}></span>
-                <span className="text-gray-600 dark:text-gray-400">Other Income</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.otherIncome }} aria-hidden="true"></span>
+                <span>Other income</span>
               </div>
             )}
             {incomeStreams.some(s => s.taxTreatment === 'tax_free') && (
-              <div className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded" style={{ backgroundColor: CHART_COLORS.taxFreeIncome }}></span>
-                <span className="text-gray-600 dark:text-gray-400">Tax-Free Income</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.taxFreeIncome }} aria-hidden="true"></span>
+                <span>Tax-free income</span>
               </div>
             )}
           </div>
-        </div>
+        </>
       )}
-    </div>
+    </Figure>
   );
 }

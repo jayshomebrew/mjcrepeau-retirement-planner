@@ -8,13 +8,13 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { AXIS_PROPS, CHART_THEME, LINE_CURSOR, TOOLTIP_CLASS } from './chartTheme';
 import { Account, AccumulationResult, getTaxTreatment } from '../types';
 import { CHART_COLORS } from '../utils/constants';
 
 interface ChartAccumulationProps {
   accounts: Account[];
   result: AccumulationResult;
-  isDarkMode?: boolean;
   /**
    * Recharts reveals series by animating a clip path from zero width. The
    * print report is captured moments after mount, so animation must be off
@@ -60,30 +60,26 @@ function CustomTooltip({ active, payload, label, accounts }: CustomTooltipProps)
   const total = payload.reduce((sum, entry) => sum + entry.value, 0);
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-      <p className="font-medium text-gray-900 dark:text-white mb-2">Age {label}</p>
+    <div className={TOOLTIP_CLASS}>
+      <p className="text-xs text-ink-2 mb-1.5">Age {label}</p>
       {[...payload].reverse().map((entry, index) => {
         const account = accounts.find(a => a.id === entry.name);
         return (
           <div key={index} className="flex justify-between gap-4 text-sm">
-            <span style={{ color: entry.color }}>{account?.name || entry.name}:</span>
-            <span className="font-medium">{formatTooltipValue(entry.value)}</span>
+            <span style={{ color: entry.color }}>{account?.name || entry.name}</span>
+            <span className="num text-ink">{formatTooltipValue(entry.value)}</span>
           </div>
         );
       })}
-      <div className="border-t border-gray-200 dark:border-gray-600 mt-2 pt-2 flex justify-between gap-4 text-sm font-semibold text-gray-900 dark:text-white">
-        <span>Total:</span>
+      <div className="border-t border-hair mt-2 pt-2 flex justify-between gap-4 text-sm font-medium text-ink [&>span:last-child]:num">
+        <span>Total</span>
         <span>{formatTooltipValue(total)}</span>
       </div>
     </div>
   );
 }
 
-export function ChartAccumulation({ accounts, result, isDarkMode = false, animate = true }: ChartAccumulationProps) {
-  // Colors based on dark mode
-  const gridColor = isDarkMode ? '#374151' : '#e5e7eb';
-  const tickColor = isDarkMode ? '#9ca3af' : '#6b7280';
-  const tickLineColor = isDarkMode ? '#4b5563' : '#d1d5db';
+export function ChartAccumulation({ accounts, result, animate = true }: ChartAccumulationProps) {
   // Transform data for the stacked area chart
   const chartData = result.yearlyBalances.map(year => {
     const dataPoint: Record<string, number | string> = {
@@ -108,26 +104,22 @@ export function ChartAccumulation({ accounts, result, isDarkMode = false, animat
     <div className="w-full h-80 touch-pan-y">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+          <CartesianGrid vertical={false} stroke={CHART_THEME.grid} />
           <XAxis
             dataKey="age"
-            tick={{ fontSize: 12, fill: tickColor }}
-            tickLine={{ stroke: tickLineColor }}
-            stroke={tickLineColor}
+            {...AXIS_PROPS}
           />
           <YAxis
             tickFormatter={formatCurrency}
-            tick={{ fontSize: 12, fill: tickColor }}
-            tickLine={{ stroke: tickLineColor }}
-            stroke={tickLineColor}
+            {...AXIS_PROPS}
             width={60}
           />
-          <Tooltip content={<CustomTooltip accounts={accounts} />} />
+          <Tooltip content={<CustomTooltip accounts={accounts} />} cursor={LINE_CURSOR} />
           <Legend
             wrapperStyle={{ paddingTop: '10px' }}
             formatter={(value) => {
               const account = accounts.find(a => a.id === value);
-              return <span style={{ color: tickColor }}>{account?.name || value}</span>;
+              return <span style={{ color: CHART_THEME.legend }}>{account?.name || value}</span>;
             }}
           />
           {sortedAccounts.map(account => (
@@ -140,7 +132,8 @@ export function ChartAccumulation({ accounts, result, isDarkMode = false, animat
               stackId="1"
               stroke={CHART_COLORS[getTaxTreatment(account.type)]}
               fill={CHART_COLORS[getTaxTreatment(account.type)]}
-              fillOpacity={0.6}
+              fillOpacity={0.22}
+              strokeWidth={1.75}
             />
           ))}
         </AreaChart>

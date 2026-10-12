@@ -7,7 +7,6 @@ interface AssumptionsFormProps {
   onChange: (assumptions: Assumptions) => void;
 }
 
-const inputClassName = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white";
 
 export function AssumptionsForm({ assumptions, onChange }: AssumptionsFormProps) {
   const handleChange = (field: keyof Assumptions, value: number) => {
@@ -18,13 +17,11 @@ export function AssumptionsForm({ assumptions, onChange }: AssumptionsFormProps)
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 pb-2">Economic Assumptions</h3>
-
-      <div className="space-y-4">
+    <div>
+      <div className="space-y-3.5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Inflation Rate (%)
+          <label className="field-label">
+            Inflation rate (%)
             <Tooltip text="Expected annual inflation rate" />
           </label>
           <NumberInput
@@ -35,14 +32,14 @@ export function AssumptionsForm({ assumptions, onChange }: AssumptionsFormProps)
             isPercentage
             decimals={1}
             defaultValue={0.03}
-            className={inputClassName}
+            className="field"
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Historical average: ~3%</p>
+          <p className="field-hint">Historical average: ~3%</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Safe Withdrawal Rate (%)
+          <label className="field-label">
+            Safe withdrawal rate (%)
             <Tooltip text="Percentage of portfolio to withdraw annually in retirement" />
           </label>
           <NumberInput
@@ -53,14 +50,14 @@ export function AssumptionsForm({ assumptions, onChange }: AssumptionsFormProps)
             isPercentage
             decimals={1}
             defaultValue={0.04}
-            className={inputClassName}
+            className="field"
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Traditional rule: 4%</p>
+          <p className="field-hint">Traditional rule: 4%</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Retirement Return Rate (%)
+          <label className="field-label">
+            Return in retirement (%)
             <Tooltip text="Expected annual return during retirement (typically more conservative)" />
           </label>
           <NumberInput
@@ -71,9 +68,9 @@ export function AssumptionsForm({ assumptions, onChange }: AssumptionsFormProps)
             isPercentage
             decimals={1}
             defaultValue={0.05}
-            className={inputClassName}
+            className="field"
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Conservative assumption: 5%</p>
+          <p className="field-hint">Conservative assumption: 5%</p>
         </div>
       </div>
     </div>

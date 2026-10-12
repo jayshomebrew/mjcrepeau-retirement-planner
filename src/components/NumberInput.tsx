@@ -14,6 +14,9 @@ interface NumberInputProps {
   decimals?: number;
   /** Default value when input is empty or invalid */
   defaultValue?: number;
+  /** Marks the field as failing validation (red outline, aria-invalid). */
+  invalid?: boolean;
+  id?: string;
 }
 
 export function NumberInput({
@@ -27,6 +30,8 @@ export function NumberInput({
   isPercentage = false,
   decimals = 0,
   defaultValue = 0,
+  invalid = false,
+  id,
 }: NumberInputProps) {
   // Convert the actual value to display value
   const toDisplayValue = useCallback((val: number): string => {
@@ -88,8 +93,10 @@ export function NumberInput({
 
   return (
     <input
+      id={id}
       type="text"
       inputMode="decimal"
+      aria-invalid={invalid || undefined}
       value={localValue}
       onChange={handleChange}
       onBlur={handleBlur}

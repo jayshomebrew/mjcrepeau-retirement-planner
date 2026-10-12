@@ -5,6 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Retirement Planner</title>
+    <script>
+      // Apply the saved theme before first paint so dark mode doesn't flash
+      // light while React loads. Mirrors useDarkMode in useLocalStorage.ts.
+      try {
+        var stored = localStorage.getItem('darkMode');
+        var dark = stored !== null ? JSON.parse(stored) : matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

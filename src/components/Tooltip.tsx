@@ -34,19 +34,21 @@ export function Tooltip({ text }: TooltipProps) {
       <button
         type="button"
         onClick={() => setIsVisible(!isVisible)}
-        className="text-gray-500 dark:text-gray-400 text-xs cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none"
+        className="inline-grid place-items-center w-4 h-4 rounded-full text-ink-3 hover:text-ink cursor-pointer align-[-2px]"
         aria-label="More information"
       >
-        ⓘ
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" strokeWidth={1.8} />
+          <path strokeLinecap="round" strokeWidth={1.8} d="M12 11v5M12 8h.01" />
+        </svg>
       </button>
       {/* Desktop: show on hover via group-hover. Mobile: show on click via isVisible */}
       <span
-        className={`absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 text-xs text-white bg-gray-800 dark:bg-gray-500 rounded shadow-lg whitespace-normal w-48 text-center pointer-events-none
+        className={`glass glass-strong absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 text-xs font-normal leading-snug text-ink rounded-xl whitespace-normal w-56 text-left pointer-events-none
           ${isVisible ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}
           transition-opacity duration-150`}
       >
         {text}
-        <span className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-800 dark:border-t-gray-500" />
       </span>
     </span>
   );

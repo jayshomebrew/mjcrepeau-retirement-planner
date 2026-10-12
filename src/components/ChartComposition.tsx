@@ -6,13 +6,14 @@ import {
   Legend,
   Tooltip,
 } from 'recharts';
+import { CHART_THEME, TOOLTIP_CLASS } from './chartTheme';
 import { Account, AccumulationResult } from '../types';
 import { useCountry } from '../contexts/CountryContext';
+import { CHART_COLORS } from '../utils/constants';
 
 interface ChartCompositionProps {
   accounts: Account[];
   result: AccumulationResult;
-  isDarkMode?: boolean;
   /**
    * Recharts reveals series by animating a clip path from zero width. The
    * print report is captured moments after mount, so animation must be off
@@ -42,17 +43,17 @@ function CustomTooltip({ active, payload, total }: CustomTooltipProps) {
   const percentage = ((data.value / total) * 100).toFixed(1);
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+    <div className={TOOLTIP_CLASS}>
       <div className="flex items-center gap-2">
         <div
           className="w-3 h-3 rounded-full"
           style={{ backgroundColor: data.payload.color }}
         />
-        <span className="font-medium text-gray-900 dark:text-white">{data.name}</span>
+        <span className="num text-ink">{data.name}</span>
       </div>
       <div className="mt-1 text-sm">
-        <div className="text-gray-900 dark:text-white">{formatCurrency(data.value)}</div>
-        <div className="text-gray-500 dark:text-gray-400">{percentage}% of portfolio</div>
+        <div className="num text-ink">{formatCurrency(data.value)}</div>
+        <div className="text-ink-2">{percentage}% of portfolio</div>
       </div>
     </div>
   );
@@ -80,20 +81,18 @@ function renderCustomizedLabel(props: LabelProps) {
     <text
       x={x}
       y={y}
-      fill="white"
+      fill={CHART_THEME.paper}
       textAnchor="middle"
       dominantBaseline="central"
-      className="text-xs font-medium"
+      className="num text-xs"
     >
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
 }
 
-export function ChartComposition({ accounts, result, isDarkMode = false, animate = true }: ChartCompositionProps) {
+export function ChartComposition({ accounts, result, animate = true }: ChartCompositionProps) {
   const { config: countryConfig } = useCountry();
-  // Colors based on dark mode
-  const labelColor = isDarkMode ? '#9ca3af' : '#374151';
 
   const accountGroupings = countryConfig.getAccountGroupings();
 
@@ -114,7 +113,7 @@ export function ChartComposition({ accounts, result, isDarkMode = false, animate
       return {
         name: account.name,
         value: result.finalBalances[account.id] || 0,
-        color: group?.color || '#3b82f6',
+        color: group?.color || CHART_COLORS.pretax,
       };
     })
     .filter(d => d.value > 0);
@@ -125,8 +124,8 @@ export function ChartComposition({ accounts, result, isDarkMode = false, animate
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* By Account Type */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center mb-2">
-          By Account Type
+        <h4 className="text-[13px] font-medium text-ink-2 text-center mb-2">
+          By account type
         </h4>
         <div className="h-64 touch-pan-y">
           <ResponsiveContainer width="100%" height="100%">
@@ -136,9 +135,10 @@ export function ChartComposition({ accounts, result, isDarkMode = false, animate
                 data={groupData}
                 cx="50%"
                 cy="50%"
-                innerRadius={40}
-                outerRadius={80}
+                innerRadius={56}
+                outerRadius={84}
                 paddingAngle={2}
+                stroke={CHART_THEME.paper}
                 dataKey="value"
                 labelLine={false}
                 label={renderCustomizedLabel}
@@ -150,7 +150,7 @@ export function ChartComposition({ accounts, result, isDarkMode = false, animate
               <Tooltip content={<CustomTooltip total={total} />} />
               <Legend
                 wrapperStyle={{ fontSize: '12px' }}
-                formatter={(value) => <span style={{ color: labelColor }}>{value}</span>}
+                formatter={(value) => <span style={{ color: CHART_THEME.legend }}>{value}</span>}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -159,8 +159,8 @@ export function ChartComposition({ accounts, result, isDarkMode = false, animate
 
       {/* By Account */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center mb-2">
-          By Account
+        <h4 className="text-[13px] font-medium text-ink-2 text-center mb-2">
+          By account
         </h4>
         <div className="h-64 touch-pan-y">
           <ResponsiveContainer width="100%" height="100%">
@@ -170,9 +170,10 @@ export function ChartComposition({ accounts, result, isDarkMode = false, animate
                 data={accountData}
                 cx="50%"
                 cy="50%"
-                innerRadius={40}
-                outerRadius={80}
+                innerRadius={56}
+                outerRadius={84}
                 paddingAngle={2}
+                stroke={CHART_THEME.paper}
                 dataKey="value"
                 labelLine={false}
                 label={renderCustomizedLabel}
@@ -184,7 +185,7 @@ export function ChartComposition({ accounts, result, isDarkMode = false, animate
               <Tooltip content={<CustomTooltip total={total} />} />
               <Legend
                 wrapperStyle={{ fontSize: '12px' }}
-                formatter={(value) => <span style={{ color: labelColor }}>{value}</span>}
+                formatter={(value) => <span style={{ color: CHART_THEME.legend }}>{value}</span>}
               />
             </PieChart>
           </ResponsiveContainer>

@@ -29,6 +29,10 @@ import { MethodologyPanel } from './components/MethodologyPanel';
 import { DataTableAccumulation } from './components/DataTableAccumulation';
 import { DataTableWithdrawal } from './components/DataTableWithdrawal';
 import { PrintReport } from './components/PrintReport';
+import { SegmentedControl } from './components/SegmentedControl';
+import { SidebarSection } from './components/SidebarSection';
+import { Figure } from './components/Figure';
+import { Modal } from './components/Modal';
 import { v4 as uuidv4 } from 'uuid';
 
 // Default accounts for US
@@ -370,10 +374,22 @@ function AppContent() {
 
   const tabs: { id: TabType; label: string }[] = [
     { id: 'summary', label: 'Summary' },
-    { id: 'accumulation', label: 'Accumulation Phase' },
-    { id: 'retirement', label: 'Retirement Phase' },
+    { id: 'accumulation', label: 'Accumulation' },
+    { id: 'retirement', label: 'Retirement' },
     { id: 'methodology', label: 'Methodology' },
   ];
+
+  // One-line readouts for the collapsed sidebar sections.
+  const formatMoney = (value: number) =>
+    new Intl.NumberFormat(country === 'CA' ? 'en-CA' : 'en-US', {
+      style: 'currency',
+      currency: country === 'CA' ? 'CAD' : 'USD',
+      maximumFractionDigits: 0,
+    }).format(value);
+  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+  const totalMonthlyIncome = incomeStreams.reduce((sum, s) => sum + s.monthlyAmount, 0);
+
+  const hasAccounts = accounts.length > 0;
 
   return (
     <>
@@ -382,313 +398,191 @@ function AppContent() {
       onToggleDarkMode={toggleDarkMode}
       onReset={handleReset}
       exportActions={exportActions}
+      tabs={
+        hasAccounts && (
+          <SegmentedControl
+            label="Results"
+            options={tabs}
+            value={activeTab}
+            onChange={setActiveTab}
+          />
+        )
+      }
     >
-      {/* Import Confirmation Modal */}
       {pendingImport && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Load this plan?
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-3">
-              This will replace your current accounts, profile, income streams, and
-              assumptions. This action cannot be undone.
-            </p>
-            <dl className="text-sm bg-gray-50 dark:bg-gray-900 rounded-md p-3 mb-4 space-y-1">
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-500 dark:text-gray-400">Country</dt>
-                <dd className="text-gray-900 dark:text-white font-medium">
-                  {pendingImport.country === 'CA' ? 'Canada' : 'United States'}
-                  {pendingImport.country !== country && (
-                    <span className="text-amber-600 dark:text-amber-400"> (switching)</span>
-                  )}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-500 dark:text-gray-400">Accounts</dt>
-                <dd className="text-gray-900 dark:text-white font-medium">
-                  {pendingImport.accounts.length}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-500 dark:text-gray-400">Income streams</dt>
-                <dd className="text-gray-900 dark:text-white font-medium">
-                  {pendingImport.incomeStreams.length}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-500 dark:text-gray-400">Ages</dt>
-                <dd className="text-gray-900 dark:text-white font-medium">
-                  {pendingImport.profile.currentAge} → {pendingImport.profile.retirementAge}{' '}
-                  → {pendingImport.profile.lifeExpectancy}
-                </dd>
-              </div>
-              {pendingImport.exportedAt && (
-                <div className="flex justify-between gap-4">
-                  <dt className="text-gray-500 dark:text-gray-400">Saved</dt>
-                  <dd className="text-gray-900 dark:text-white font-medium">
-                    {pendingImport.exportedAt.slice(0, 10)}
-                  </dd>
-                </div>
-              )}
-            </dl>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={cancelImport}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmImport}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-              >
-                Load Plan
-              </button>
+        <Modal
+          title="Load this plan?"
+          onClose={cancelImport}
+          actions={
+            <>
+              <button onClick={cancelImport} className="btn btn-ghost">Cancel</button>
+              <button onClick={confirmImport} className="btn btn-primary">Load plan</button>
+            </>
+          }
+        >
+          <p className="mb-3">
+            This replaces your current accounts, profile, income streams, and assumptions. It can't
+            be undone.
+          </p>
+          <dl className="rounded-xl bg-well px-3.5 py-3 space-y-1.5">
+            <div className="flex justify-between gap-4">
+              <dt>Country</dt>
+              <dd className="text-ink font-medium">
+                {pendingImport.country === 'CA' ? 'Canada' : 'United States'}
+                {pendingImport.country !== country && (
+                  <span className="text-warn"> (switching)</span>
+                )}
+              </dd>
             </div>
-          </div>
-        </div>
+            <div className="flex justify-between gap-4">
+              <dt>Accounts</dt>
+              <dd className="text-ink num">{pendingImport.accounts.length}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt>Income streams</dt>
+              <dd className="text-ink num">{pendingImport.incomeStreams.length}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt>Ages</dt>
+              <dd className="text-ink num">
+                {pendingImport.profile.currentAge} → {pendingImport.profile.retirementAge}{' '}
+                → {pendingImport.profile.lifeExpectancy}
+              </dd>
+            </div>
+            {pendingImport.exportedAt && (
+              <div className="flex justify-between gap-4">
+                <dt>Saved</dt>
+                <dd className="text-ink num">{pendingImport.exportedAt.slice(0, 10)}</dd>
+              </div>
+            )}
+          </dl>
+        </Modal>
       )}
 
-      {/* Import Error Modal */}
       {importError && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Couldn't load that file
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">{importError}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Your current plan has not been changed.
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={cancelImport}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
+        <Modal
+          title="Couldn't load that file"
+          onClose={cancelImport}
+          actions={<button onClick={cancelImport} className="btn btn-primary">OK</button>}
+        >
+          <p className="mb-2 text-ink">{importError}</p>
+          <p>Your current plan hasn't changed.</p>
+        </Modal>
       )}
 
-      {/* Reset Confirmation Modal */}
       {showResetConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Reset All Data?
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              This will clear all your saved accounts, profile settings, income streams, and assumptions.
-              This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={cancelReset}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmReset}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-              >
-                Reset Everything
-              </button>
-            </div>
-          </div>
-        </div>
+        <Modal
+          title="Reset all data?"
+          onClose={cancelReset}
+          actions={
+            <>
+              <button onClick={cancelReset} className="btn btn-ghost">Cancel</button>
+              <button onClick={confirmReset} className="btn btn-danger">Reset everything</button>
+            </>
+          }
+        >
+          <p>
+            This clears your saved accounts, profile, income streams, and assumptions. It can't be
+            undone.
+          </p>
+        </Modal>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Panel - Inputs */}
-        <div className="lg:col-span-1 space-y-4">
-          {/* Accounts Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => toggleSection('accounts')}
-              className="w-full px-4 py-3 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg"
-            >
-              <span className="font-medium text-gray-900 dark:text-white">Investment Accounts</span>
-              <svg
-                className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${
-                  expandedSection === 'accounts' ? 'rotate-180' : ''
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {expandedSection === 'accounts' && (
-              <div className="px-4 pb-4">
-                <AccountList
-                  accounts={accounts}
-                  profile={profile}
-                  countryConfig={countryConfig}
-                  onAdd={handleAddAccount}
-                  onUpdate={handleUpdateAccount}
-                  onDelete={handleDeleteAccount}
-                />
-              </div>
-            )}
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)] gap-6 lg:gap-10 items-start">
+        {/* Inputs: one glass panel floating over the page */}
+        <aside className="glass rounded-[26px] p-1.5" aria-label="Plan inputs">
+          <SidebarSection
+            title="Investment accounts"
+            summary={formatMoney(totalBalance)}
+            isOpen={expandedSection === 'accounts'}
+            onToggle={() => toggleSection('accounts')}
+          >
+            <AccountList
+              accounts={accounts}
+              profile={profile}
+              countryConfig={countryConfig}
+              onAdd={handleAddAccount}
+              onUpdate={handleUpdateAccount}
+              onDelete={handleDeleteAccount}
+            />
+          </SidebarSection>
 
-          {/* Profile Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => toggleSection('profile')}
-              className="w-full px-4 py-3 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg"
-            >
-              <span className="font-medium text-gray-900 dark:text-white">Personal Profile</span>
-              <svg
-                className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${
-                  expandedSection === 'profile' ? 'rotate-180' : ''
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {expandedSection === 'profile' && (
-              <div className="px-4 pb-4">
-                <ProfileForm profile={profile} onChange={setProfile} />
-              </div>
-            )}
-          </div>
+          <SidebarSection
+            title="Personal profile"
+            summary={`Age ${profile.currentAge}, retire at ${profile.retirementAge}`}
+            isOpen={expandedSection === 'profile'}
+            onToggle={() => toggleSection('profile')}
+          >
+            <ProfileForm profile={profile} onChange={setProfile} />
+          </SidebarSection>
 
-          {/* Income Streams Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => toggleSection('incomeStreams')}
-              className="w-full px-4 py-3 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg"
-            >
-              <span className="font-medium text-gray-900 dark:text-white">Income Streams</span>
-              <svg
-                className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${
-                  expandedSection === 'incomeStreams' ? 'rotate-180' : ''
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {expandedSection === 'incomeStreams' && (
-              <div className="px-4 pb-4">
-                <IncomeStreamList
-                  incomeStreams={incomeStreams}
-                  onAdd={handleAddIncomeStream}
-                  onUpdate={handleUpdateIncomeStream}
-                  onDelete={handleDeleteIncomeStream}
-                />
-              </div>
-            )}
-          </div>
+          <SidebarSection
+            title="Income streams"
+            summary={totalMonthlyIncome > 0 ? `${formatMoney(totalMonthlyIncome)}/mo` : 'None'}
+            isOpen={expandedSection === 'incomeStreams'}
+            onToggle={() => toggleSection('incomeStreams')}
+          >
+            <IncomeStreamList
+              incomeStreams={incomeStreams}
+              onAdd={handleAddIncomeStream}
+              onUpdate={handleUpdateIncomeStream}
+              onDelete={handleDeleteIncomeStream}
+            />
+          </SidebarSection>
 
-          {/* Assumptions Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => toggleSection('assumptions')}
-              className="w-full px-4 py-3 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-t-lg"
-            >
-              <span className="font-medium text-gray-900 dark:text-white">Economic Assumptions</span>
-              <svg
-                className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${
-                  expandedSection === 'assumptions' ? 'rotate-180' : ''
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {expandedSection === 'assumptions' && (
-              <div className="px-4 pb-4">
-                <AssumptionsForm assumptions={assumptions} onChange={setAssumptions} />
-              </div>
-            )}
-          </div>
-        </div>
+          <SidebarSection
+            title="Economic assumptions"
+            summary={`${(assumptions.inflationRate * 100).toFixed(1)}% inflation`}
+            isOpen={expandedSection === 'assumptions'}
+            onToggle={() => toggleSection('assumptions')}
+          >
+            <AssumptionsForm assumptions={assumptions} onChange={setAssumptions} />
+          </SidebarSection>
+        </aside>
 
-        {/* Right Panel - Charts and Results */}
-        <div className="lg:col-span-2 space-y-6">
-          {accounts.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
-              <svg
-                className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Accounts Added</h3>
-              <p className="text-gray-500 dark:text-gray-400">
-                Add investment accounts to see your retirement projections.
+        {/* Results, read directly on the page */}
+        <div
+          className="min-w-0 space-y-12"
+          role={hasAccounts ? 'tabpanel' : undefined}
+          aria-label={hasAccounts ? tabs.find(t => t.id === activeTab)?.label : undefined}
+        >
+          {!hasAccounts ? (
+            <div className="py-16 text-center">
+              <h3 className="font-serif text-2xl font-bold text-ink mb-2">Add your first account</h3>
+              <p className="text-sm text-ink-2 max-w-sm mx-auto mb-5">
+                Projections, withdrawals, and taxes appear here once you add an investment account.
               </p>
+              <button onClick={() => setExpandedSection('accounts')} className="btn btn-primary">
+                Open accounts
+              </button>
             </div>
           ) : (
             <>
-              {/* Tab Navigation */}
-              <div className="border-b border-gray-200 dark:border-gray-700">
-                <nav className="flex space-x-8 overflow-x-auto scrollbar-hide">
-                  {tabs.map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                        activeTab === tab.id
-                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-
-              {/* Summary Tab */}
               {activeTab === 'summary' && (
-                <div className="space-y-6">
+                <>
                   <SummaryCards
+                    accounts={accounts}
                     profile={profile}
                     assumptions={assumptions}
+                    incomeStreams={incomeStreams}
                     accumulationResult={accumulation}
                     retirementResult={retirement}
                   />
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Portfolio Composition at Retirement
-                    </h3>
-                    <ChartComposition accounts={accounts} result={accumulation} isDarkMode={isDarkMode} />
-                  </div>
-                </div>
+                  <Figure title="Portfolio composition at retirement">
+                    <ChartComposition accounts={accounts} result={accumulation} />
+                  </Figure>
+                </>
               )}
 
-              {/* Accumulation Tab */}
               {activeTab === 'accumulation' && (
-                <div className="space-y-6">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Account Growth (Age {profile.currentAge} to {profile.retirementAge})
-                    </h3>
-                    <ChartAccumulation accounts={accounts} result={accumulation} isDarkMode={isDarkMode} />
-                  </div>
+                <>
+                  <Figure
+                    title="Account growth"
+                    caption={`Age ${profile.currentAge} to ${profile.retirementAge}`}
+                  >
+                    <ChartAccumulation accounts={accounts} result={accumulation} />
+                  </Figure>
 
                   <DataTableAccumulation
                     accounts={accounts}
@@ -697,38 +591,28 @@ function AppContent() {
                     assumptions={assumptions}
                   />
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Portfolio Composition at Retirement
-                    </h3>
-                    <ChartComposition accounts={accounts} result={accumulation} isDarkMode={isDarkMode} />
-                  </div>
-                </div>
+                  <Figure title="Portfolio composition at retirement">
+                    <ChartComposition accounts={accounts} result={accumulation} />
+                  </Figure>
+                </>
               )}
 
-              {/* Retirement Tab */}
               {activeTab === 'retirement' && (
-                <div className="space-y-6">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Portfolio Drawdown (Age {profile.retirementAge} to {profile.lifeExpectancy})
-                    </h3>
-                    <ChartDrawdown accounts={accounts} result={retirement} isDarkMode={isDarkMode} />
-                  </div>
+                <>
+                  <Figure
+                    title="Portfolio drawdown"
+                    caption={`Age ${profile.retirementAge} to ${profile.lifeExpectancy}`}
+                  >
+                    <ChartDrawdown accounts={accounts} result={retirement} />
+                  </Figure>
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Annual Retirement Income
-                    </h3>
-                    <ChartIncome result={retirement} incomeStreams={incomeStreams} isDarkMode={isDarkMode} />
-                  </div>
+                  <Figure title="Annual retirement income">
+                    <ChartIncome result={retirement} incomeStreams={incomeStreams} />
+                  </Figure>
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Tax Burden Over Time
-                    </h3>
-                    <ChartTax result={retirement} isDarkMode={isDarkMode} />
-                  </div>
+                  <Figure title="Tax burden over time">
+                    <ChartTax result={retirement} />
+                  </Figure>
 
                   <DataTableWithdrawal
                     accounts={accounts}
@@ -737,10 +621,9 @@ function AppContent() {
                     profile={profile}
                     assumptions={assumptions}
                   />
-                </div>
+                </>
               )}
 
-              {/* Methodology Tab */}
               {activeTab === 'methodology' && (
                 <MethodologyPanel profile={profile} assumptions={assumptions} />
               )}

@@ -80,6 +80,15 @@ Uses `@tailwindcss/vite` plugin. Dark mode requires this CSS directive:
 @custom-variant dark (&:where(.dark, .dark *));
 ```
 
+### Design system (`src/index.css`)
+
+Results are set directly on the page; controls float above it in "liquid glass". Light mode is neutral paper ("vellum"), dark mode is honed slate.
+
+- **Theme tokens, not `dark:` variants.** Colors are CSS variables with light values on `:root` and dark values on `.dark`, exposed to Tailwind via `@theme inline`: `text-ink` / `text-ink-2`, `border-hair` / `border-hair-strong`, `bg-well`, `bg-hover`, data colors (`text-pretax`, `text-roth`, `text-taxable`, `text-hsa`, `text-tax`, `text-social`, …) and `text-good` / `text-bad` / `text-warn`. Components should not use Tailwind palette colors or `dark:`. `.dark` is applied before first paint by an inline script in `index.html`.
+- **Type.** Computer Modern Serif (CMU, vendored unmodified in `src/assets/fonts/` with its OFL license) for figures and headings via `font-serif` or the `num` utility (serif + tabular figures). Interface text uses the system UI font.
+- **Component classes.** `.glass` (control surfaces), `.glass-strong` (menus, dialogs, tooltips that float over content), `.field` / `.field-label` / `.field-hint` / `.field-error`, `.btn` + `.btn-primary` / `.btn-ghost` / `.btn-danger`, `.icon-btn`. `SegmentedControl` is the tab strip with the sliding glass lens; `Figure` is an on-page section heading for charts and tables.
+- **Summary tiles** use `formatCompactCurrency` (`src/utils/format.ts`: $14.5k, $1.44M); the headline card keeps full figures.
+
 ### Chart Components
 
-All chart components accept `isDarkMode` prop for proper axis/legend coloring. Pass from App.tsx which manages dark mode state.
+Charts take no theme prop. `CHART_COLORS` (`src/utils/constants.ts`) values are `var(--…)` references and `src/components/chartTheme.ts` holds the shared axis, grid, cursor, and tooltip styling, so SVG fills follow the theme through CSS.

@@ -126,9 +126,9 @@ export function ExportMenu({
           <button
             key={item.id}
             onClick={() => runAction(item.id)}
-            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+            className="w-full px-2.5 py-2 rounded-xl text-left text-sm text-ink hover:bg-hover flex items-center gap-3"
           >
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               {item.icon}
             </svg>
             {item.label}
@@ -146,9 +146,9 @@ export function ExportMenu({
         aria-haspopup="menu"
         aria-expanded={isOpen}
         title="Export or load a plan"
-        className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+        className="btn btn-ghost pl-3 pr-2.5"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -158,7 +158,7 @@ export function ExportMenu({
         </svg>
         Export
         <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -170,17 +170,18 @@ export function ExportMenu({
       {isOpen && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 z-50"
+          className="glass glass-strong absolute right-0 mt-2 w-72 rounded-2xl p-1.5 z-50"
         >
           {ITEMS.map(item => (
             <button
               key={item.id}
               role="menuitem"
               onClick={() => runAction(item.id)}
-              className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start gap-3"
+              className="w-full px-2.5 py-2 rounded-xl text-left hover:bg-hover flex items-start gap-3"
             >
               <svg
-                className="w-5 h-5 mt-0.5 shrink-0 text-gray-500 dark:text-gray-400"
+                className="w-[18px] h-[18px] mt-0.5 shrink-0 text-ink-2"
+                aria-hidden="true"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -188,10 +189,10 @@ export function ExportMenu({
                 {item.icon}
               </svg>
               <span>
-                <span className="block text-sm font-medium text-gray-900 dark:text-white">
+                <span className="block text-sm font-medium text-ink">
                   {item.label}
                 </span>
-                <span className="block text-xs text-gray-500 dark:text-gray-400">
+                <span className="block text-xs text-ink-2">
                   {item.description}
                 </span>
               </span>

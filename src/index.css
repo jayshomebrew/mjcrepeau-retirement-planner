@@ -3,59 +3,496 @@
 /* Enable class-based dark mode for Tailwind v4 */
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --color-primary: #3b82f6;
-  --color-primary-dark: #2563eb;
-  --color-secondary: #10b981;
-  --color-secondary-dark: #059669;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
+/* ---------------------------------------------------------------------------
+   Typefaces
 
-  /* Chart colors by tax treatment */
-  --color-pretax: #3b82f6;
-  --color-roth: #10b981;
-  --color-taxable: #f59e0b;
-  --color-hsa: #8b5cf6;
+   Computer Modern Serif (the CMU distribution, SIL Open Font License; see
+   src/assets/fonts/OFL.txt) carries every figure and heading. Interface text
+   (labels, buttons, tabs) uses the platform's own UI face, which is what the
+   glass controls are modelled on. The font files are shipped unmodified.
+--------------------------------------------------------------------------- */
+@font-face {
+  font-family: "CMU Serif";
+  src: url("./assets/fonts/cmu-serif-500-roman.woff2") format("woff2");
+  font-weight: 300 500;
+  font-style: normal;
+  font-display: swap;
 }
 
-/* Light mode (default) */
+@font-face {
+  font-family: "CMU Serif";
+  src: url("./assets/fonts/cmu-serif-700-roman.woff2") format("woff2");
+  font-weight: 600 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CMU Serif";
+  src: url("./assets/fonts/cmu-serif-500-italic.woff2") format("woff2");
+  font-weight: 300 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "CMU Serif", "Latin Modern Roman", "Computer Modern Serif", "Iowan Old Style",
+    Georgia, serif;
+}
+
+/* ---------------------------------------------------------------------------
+   Color tokens
+
+   Components name a role (ink, hair, pretax…) once; the light and dark values
+   live here. Light mode is "vellum" (neutral fine paper), dark mode is "slate"
+   (honed stone). Chart code references the raw variables (var(--pretax)) via
+   CHART_COLORS so SVG fills switch with the theme too.
+--------------------------------------------------------------------------- */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-on-ink: var(--on-ink);
+  --color-hair: var(--hair);
+  --color-hair-strong: var(--hair-strong);
+  --color-well: var(--well);
+  --color-hover: var(--hover);
+  --color-focus: var(--focus);
+
+  --color-pretax: var(--pretax);
+  --color-roth: var(--roth);
+  --color-taxable: var(--taxable);
+  --color-hsa: var(--hsa);
+  --color-locked: var(--locked);
+  --color-tax: var(--tax);
+  --color-social: var(--social);
+  --color-pension: var(--pension);
+  --color-other-income: var(--other-income);
+  --color-tax-free: var(--tax-free);
+  --color-retirement-income: var(--retirement-income);
+  --color-spending: var(--spending);
+
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+  --color-warn: var(--warn);
+}
+
+:root {
+  color-scheme: light;
+
+  --paper: #e5e4df;
+  --ink: #1b1f27;
+  --ink-2: #565c67;
+  --ink-3: #80858d;
+  --on-ink: #f4f3ef;
+  --hair: rgb(27 31 39 / 0.12);
+  --hair-strong: rgb(27 31 39 / 0.24);
+  --well: rgb(27 31 39 / 0.055);
+  --well-edge: rgb(27 31 39 / 0.13);
+  --hover: rgb(27 31 39 / 0.06);
+  --focus: #3a5cc5;
+
+  --dot: rgb(27 31 39 / 0.1);
+  --glow: rgb(255 255 255 / 0.55);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .22 0 0 0 0 .26 0 0 0 .22 -.07'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  --glass-fill: linear-gradient(180deg, rgb(255 255 255 / 0.52), rgb(255 255 255 / 0.24));
+  --glass-fill-strong: linear-gradient(180deg, rgb(250 250 248 / 0.9), rgb(243 243 240 / 0.84));
+  --glass-solid: #f1f0ec;
+  --glass-rim: linear-gradient(
+    140deg,
+    rgb(255 255 255 / 1),
+    rgb(255 255 255 / 0.15) 38%,
+    rgb(255 255 255 / 0.05) 62%,
+    rgb(255 255 255 / 0.75)
+  );
+  --glass-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(20 25 35 / 0.06),
+    0 14px 34px -16px rgb(20 25 35 / 0.32);
+  --lens: rgb(255 255 255 / 0.92);
+  --lens-shadow: 0 1px 1px rgb(20 25 35 / 0.08), 0 4px 12px -4px rgb(20 25 35 / 0.25);
+  --scrim: rgb(30 34 40 / 0.28);
+
+  --pretax: #3a5cc5;
+  --roth: #13866f;
+  --taxable: #b07816;
+  --hsa: #8250b8;
+  --locked: #5a7486;
+  --tax: #c1432f;
+  --social: #8b4fc8;
+  --pension: #c2417a;
+  --other-income: #c8641c;
+  --tax-free: #0f8aa3;
+  --retirement-income: #2b7fc4;
+  --spending: #0d7f73;
+
+  --good: #13866f;
+  --bad: #c1432f;
+  --warn: #9a6408;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --paper: #1f2625;
+  --ink: #e9ecea;
+  --ink-2: #a3acaa;
+  --ink-3: #737c7a;
+  --on-ink: #1f2625;
+  --hair: rgb(233 236 234 / 0.11);
+  --hair-strong: rgb(233 236 234 / 0.22);
+  --well: rgb(0 0 0 / 0.24);
+  --well-edge: rgb(255 255 255 / 0.09);
+  --hover: rgb(255 255 255 / 0.06);
+  --focus: #86a8f7;
+
+  --dot: rgb(233 236 234 / 0.075);
+  --glow: rgb(255 255 255 / 0.05);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .85 0 0 0 0 .9 0 0 0 0 .88 0 0 0 .14 -.04'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  --glass-fill: linear-gradient(180deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.03));
+  --glass-fill-strong: linear-gradient(180deg, rgb(46 54 53 / 0.92), rgb(37 44 43 / 0.88));
+  --glass-solid: #2a3231;
+  --glass-rim: linear-gradient(
+    140deg,
+    rgb(255 255 255 / 0.42),
+    rgb(255 255 255 / 0.06) 38%,
+    rgb(255 255 255 / 0.02) 62%,
+    rgb(255 255 255 / 0.22)
+  );
+  --glass-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12), 0 1px 2px rgb(0 0 0 / 0.3),
+    0 18px 40px -16px rgb(0 0 0 / 0.7);
+  --lens: rgb(255 255 255 / 0.16);
+  --lens-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 12px -4px rgb(0 0 0 / 0.6);
+  --scrim: rgb(0 0 0 / 0.45);
+
+  --pretax: #86a8f7;
+  --roth: #5ccfa7;
+  --taxable: #eec160;
+  --hsa: #c39cf2;
+  --locked: #a7bccb;
+  --tax: #f08c7c;
+  --social: #cfa2f5;
+  --pension: #f08fb8;
+  --other-income: #f4a06a;
+  --tax-free: #5fcbe0;
+  --retirement-income: #7cbaf0;
+  --spending: #4fd1c0;
+
+  --good: #5ccfa7;
+  --bad: #f08c7c;
+  --warn: #eec160;
+}
+
+/* ---------------------------------------------------------------------------
+   Page
+--------------------------------------------------------------------------- */
+html {
+  background-color: var(--paper);
+}
+
 body {
-  @apply bg-gray-50 text-gray-900 min-h-screen transition-colors duration-200;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  @apply bg-page;
+}
+
+/* The page surface: soft light falloff, a fine dot grid, and paper grain.
+   The texture is what the glass surfaces visibly blur. It is fixed to the
+   viewport, so anything else using `bg-page` (e.g. a sticky table column that
+   needs an opaque fill) lines up with the page behind it seamlessly. */
+@utility bg-page {
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(120% 80% at 15% 0%, var(--glow), transparent 60%),
+    radial-gradient(circle, var(--dot) 1px, transparent 1.4px), var(--grain);
+  background-size:
+    100% 100%,
+    24px 24px,
+    200px 200px;
+  background-attachment: fixed;
 }
 
 #root {
-  @apply min-h-screen;
+  min-height: 100vh;
 }
 
-/* Dark mode */
-.dark body {
-  @apply bg-gray-900 text-gray-100;
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
-/* Dark mode form inputs */
-.dark input,
-.dark select {
-  @apply bg-gray-700 border-gray-600 text-gray-100;
+/* Figures: Computer Modern with lining, tabular digits. */
+@utility num {
+  font-family: var(--font-serif);
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
-.dark input::placeholder {
-  @apply text-gray-400;
+/* ---------------------------------------------------------------------------
+   Glass
+
+   `.glass` is the control layer: inputs panel, toolbar, tiles, buttons.
+   `.glass-strong` adds near-opaque frosting for surfaces that float over
+   arbitrary content (menus, dialogs, chart tooltips) so text stays legible.
+   The rim is a 1px gradient border drawn with a mask so it catches light on
+   the top-left and fades on the far edges.
+--------------------------------------------------------------------------- */
+@layer components {
+  .glass {
+    position: relative;
+    background: var(--glass-fill);
+    -webkit-backdrop-filter: blur(6px) saturate(140%) brightness(1.04);
+    backdrop-filter: blur(6px) saturate(140%) brightness(1.04);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--glass-rim);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .glass-strong {
+    background: var(--glass-fill-strong);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    backdrop-filter: blur(18px) saturate(150%);
+  }
+
+  /* Text inputs and selects: a recessed well inside the glass. */
+  .field {
+    display: block;
+    width: 100%;
+    padding: 0.4375rem 0.6875rem;
+    border-radius: 0.625rem;
+    background: var(--well);
+    box-shadow: inset 0 0 0 0.5px var(--well-edge);
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.4;
+    transition: box-shadow 120ms ease;
+  }
+
+  .field::placeholder {
+    color: var(--ink-3);
+  }
+
+  .field:focus {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 0.5px var(--well-edge),
+      0 0 0 2px var(--focus);
+  }
+
+  .field[aria-invalid="true"] {
+    box-shadow: inset 0 0 0 1.5px var(--bad);
+  }
+
+  .field[aria-invalid="true"]:focus {
+    box-shadow:
+      inset 0 0 0 1.5px var(--bad),
+      0 0 0 2px var(--focus);
+  }
+
+  select.field {
+    appearance: none;
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23565c67' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.625rem center;
+    background-size: 0.875rem;
+    cursor: pointer;
+  }
+
+  .dark select.field {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3acaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+
+  select.field option {
+    background: var(--glass-solid);
+    color: var(--ink);
+  }
+
+  .field-label {
+    display: block;
+    margin-bottom: 0.3125rem;
+    font-size: 0.78125rem;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+
+  .field-hint {
+    margin-top: 0.3125rem;
+    font-size: 0.75rem;
+    color: var(--ink-2);
+  }
+
+  .field-error {
+    margin-top: 0.3125rem;
+    font-size: 0.75rem;
+    color: var(--bad);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.4375rem 0.9375rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 120ms ease,
+      opacity 120ms ease,
+      transform 120ms ease;
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn-primary {
+    background: var(--ink);
+    color: var(--on-ink);
+  }
+
+  .btn-primary:hover {
+    opacity: 0.88;
+  }
+
+  .btn-danger {
+    background: var(--bad);
+    color: #fff;
+  }
+
+  .dark .btn-danger {
+    color: var(--on-ink);
+  }
+
+  .btn-danger:hover {
+    opacity: 0.88;
+  }
+
+  .btn-ghost {
+    color: var(--ink-2);
+  }
+
+  .btn-ghost:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+
+  .icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    color: var(--ink-2);
+    transition: background-color 120ms ease;
+  }
+
+  .icon-btn:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+
+  /* Segmented control with a sliding glass lens behind the active option. */
+  .seg {
+    position: relative;
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 9999px;
+    background: var(--well);
+    box-shadow: inset 0 0 0 0.5px var(--well-edge);
+  }
+
+  .seg-lens {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    border-radius: 9999px;
+    background: var(--lens);
+    box-shadow: var(--lens-shadow);
+    transition:
+      left 420ms cubic-bezier(0.3, 1.35, 0.5, 1),
+      width 420ms cubic-bezier(0.3, 1.35, 0.5, 1);
+  }
+
+  .seg-option {
+    position: relative;
+    z-index: 1;
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--ink-2);
+    transition:
+      color 200ms ease,
+      transform 420ms cubic-bezier(0.3, 1.35, 0.5, 1);
+  }
+
+  .seg-option:hover {
+    color: var(--ink);
+  }
+
+  .seg-option[aria-selected="true"] {
+    color: var(--ink);
+    transform: scale(1.04);
+  }
+
+  .seg-sm .seg-option {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+  }
 }
 
-/* Dark mode focus states */
-.dark input:focus,
-.dark select:focus {
-  @apply border-blue-500 ring-blue-500;
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-strong {
+    background: var(--glass-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
-/* Recharts dark mode tooltip styling */
-.dark .recharts-default-tooltip {
-  background-color: #1f2937 !important;
-  border-color: #374151 !important;
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong {
+    background: var(--glass-solid);
+  }
 }
 
-.dark .recharts-tooltip-label {
-  color: #f3f4f6 !important;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* Hide scrollbar for horizontal scroll tabs */
@@ -87,17 +524,31 @@ body {
 }
 
 /*
- * SummaryCards switches to 3- and 4-column grids at Tailwind's `md` breakpoint,
- * which measures the viewport — not this fixed 720px container — so on a wide
- * screen the cards would overflow the page. Pin them to two columns.
+ * The summary tiles switch to 4 columns at Tailwind's `md` breakpoint, which
+ * measures the viewport — not this fixed 720px container — so on a wide
+ * screen they would overflow the page. Pin them to two columns.
  */
-.print-report .print-summary .grid {
+.print-report .print-summary .summary-tiles {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-/* The summary cards' expand chevrons are an interactive affordance with no
+/* The summary's expand chevrons are an interactive affordance with no
    meaning on paper. */
-.print-report button[aria-label*='calculation details'] {
+.print-report .chevron {
+  display: none;
+}
+
+/* Glass and paper texture don't belong on a printed page: flatten every glass
+   surface to white with a hairline border. */
+.print-report .glass {
+  background: #fff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  border: 1px solid #d6d6d2;
+}
+
+.print-report .glass::before {
   display: none;
 }
 
@@ -112,6 +563,7 @@ body {
     display: none !important;
   }
 
+  html,
   body {
     background: #fff !important;
   }
