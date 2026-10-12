@@ -58,6 +58,7 @@
   --color-on-ink: var(--on-ink);
   --color-hair: var(--hair);
   --color-hair-strong: var(--hair-strong);
+  --color-rule: var(--rule);
   --color-well: var(--well);
   --color-hover: var(--hover);
   --color-focus: var(--focus);
@@ -83,35 +84,45 @@
 :root {
   color-scheme: light;
 
-  --paper: #e5e4df;
-  --ink: #1b1f27;
-  --ink-2: #565c67;
-  --ink-3: #80858d;
+  --paper: #efeeea;
+  --ink: #171a21;
+  --ink-2: #555b66;
+  --ink-3: #878c95;
   --on-ink: #f4f3ef;
-  --hair: rgb(27 31 39 / 0.12);
-  --hair-strong: rgb(27 31 39 / 0.24);
-  --well: rgb(27 31 39 / 0.055);
-  --well-edge: rgb(27 31 39 / 0.13);
-  --hover: rgb(27 31 39 / 0.06);
+  --hair: rgb(23 26 33 / 0.13);
+  --hair-strong: rgb(23 26 33 / 0.26);
+  /* Table rules (booktabs top and bottom). */
+  --rule: rgb(23 26 33 / 0.62);
+  --well: rgb(23 26 33 / 0.06);
+  --well-edge: rgb(23 26 33 / 0.1);
+  --hover: rgb(23 26 33 / 0.06);
   --focus: #3a5cc5;
 
-  --dot: rgb(27 31 39 / 0.1);
-  --glow: rgb(255 255 255 / 0.55);
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .22 0 0 0 0 .26 0 0 0 .22 -.07'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Daylight on the page: a cool wash from the top right, a warm one from the
+     bottom left, and a white bloom at the top. It is what the glass refracts. */
+  --light-cool: rgb(164 188 226 / 0.36);
+  --light-warm: rgb(228 208 172 / 0.32);
+  --light-bloom: rgb(255 255 255 / 0.85);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .22 0 0 0 0 .26 0 0 0 .18 -.06'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 
-  --glass-fill: linear-gradient(180deg, rgb(255 255 255 / 0.52), rgb(255 255 255 / 0.24));
+  --glass-fill: linear-gradient(
+    168deg,
+    rgb(255 255 255 / 0.64) 0%,
+    rgb(255 255 255 / 0.32) 45%,
+    rgb(234 238 245 / 0.4) 100%
+  );
   --glass-fill-strong: linear-gradient(180deg, rgb(250 250 248 / 0.9), rgb(243 243 240 / 0.84));
-  --glass-solid: #f1f0ec;
+  --glass-solid: #f3f2ee;
   --glass-rim: linear-gradient(
     140deg,
     rgb(255 255 255 / 1),
-    rgb(255 255 255 / 0.15) 38%,
-    rgb(255 255 255 / 0.05) 62%,
-    rgb(255 255 255 / 0.75)
+    rgb(255 255 255 / 0.4) 35%,
+    rgb(255 255 255 / 0.12) 60%,
+    rgb(255 255 255 / 0.9)
   );
   --glass-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(20 25 35 / 0.06),
-    0 14px 34px -16px rgb(20 25 35 / 0.32);
+    inset 0 1px 0 rgb(255 255 255 / 0.95), inset 0 -1px 0 rgb(23 26 33 / 0.06),
+    0 1px 2px rgb(20 25 35 / 0.05), 0 26px 60px -26px rgb(20 25 35 / 0.42);
   --lens: rgb(255 255 255 / 0.92);
   --lens-shadow: 0 1px 1px rgb(20 25 35 / 0.08), 0 4px 12px -4px rgb(20 25 35 / 0.25);
   --scrim: rgb(30 34 40 / 0.28);
@@ -137,35 +148,42 @@
 .dark {
   color-scheme: dark;
 
-  --paper: #1f2625;
+  --paper: #1b2221;
   --ink: #e9ecea;
   --ink-2: #a3acaa;
   --ink-3: #737c7a;
-  --on-ink: #1f2625;
-  --hair: rgb(233 236 234 / 0.11);
-  --hair-strong: rgb(233 236 234 / 0.22);
-  --well: rgb(0 0 0 / 0.24);
-  --well-edge: rgb(255 255 255 / 0.09);
+  --on-ink: #1b2221;
+  --hair: rgb(233 236 234 / 0.12);
+  --hair-strong: rgb(233 236 234 / 0.24);
+  --rule: rgb(233 236 234 / 0.55);
+  --well: rgb(0 0 0 / 0.26);
+  --well-edge: rgb(255 255 255 / 0.08);
   --hover: rgb(255 255 255 / 0.06);
   --focus: #86a8f7;
 
-  --dot: rgb(233 236 234 / 0.075);
-  --glow: rgb(255 255 255 / 0.05);
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .85 0 0 0 0 .9 0 0 0 0 .88 0 0 0 .14 -.04'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --light-cool: rgb(92 130 172 / 0.34);
+  --light-warm: rgb(118 108 152 / 0.22);
+  --light-bloom: rgb(255 255 255 / 0);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .85 0 0 0 0 .9 0 0 0 0 .88 0 0 0 .13 -.04'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 
-  --glass-fill: linear-gradient(180deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.03));
+  --glass-fill: linear-gradient(
+    168deg,
+    rgb(255 255 255 / 0.115),
+    rgb(255 255 255 / 0.05) 50%,
+    rgb(255 255 255 / 0.035)
+  );
   --glass-fill-strong: linear-gradient(180deg, rgb(46 54 53 / 0.92), rgb(37 44 43 / 0.88));
-  --glass-solid: #2a3231;
+  --glass-solid: #28302f;
   --glass-rim: linear-gradient(
     140deg,
-    rgb(255 255 255 / 0.42),
-    rgb(255 255 255 / 0.06) 38%,
-    rgb(255 255 255 / 0.02) 62%,
-    rgb(255 255 255 / 0.22)
+    rgb(255 255 255 / 0.6),
+    rgb(255 255 255 / 0.12) 35%,
+    rgb(255 255 255 / 0.04) 60%,
+    rgb(255 255 255 / 0.32)
   );
   --glass-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.12), 0 1px 2px rgb(0 0 0 / 0.3),
-    0 18px 40px -16px rgb(0 0 0 / 0.7);
+    inset 0 1px 0 rgb(255 255 255 / 0.15), inset 0 -1px 0 rgb(0 0 0 / 0.28),
+    0 1px 2px rgb(0 0 0 / 0.35), 0 26px 60px -24px rgb(0 0 0 / 0.85);
   --lens: rgb(255 255 255 / 0.16);
   --lens-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 12px -4px rgb(0 0 0 / 0.6);
   --scrim: rgb(0 0 0 / 0.45);
@@ -204,18 +222,22 @@ body {
   @apply bg-page;
 }
 
-/* The page surface: soft light falloff, a fine dot grid, and paper grain.
-   The texture is what the glass surfaces visibly blur. It is fixed to the
-   viewport, so anything else using `bg-page` (e.g. a sticky table column that
-   needs an opaque fill) lines up with the page behind it seamlessly. */
+/* The page surface: daylight across the viewport and paper grain. The light
+   is what the glass surfaces visibly blur and what their rims catch. It is
+   fixed to the viewport, so anything else using `bg-page` (e.g. a sticky
+   table column that needs an opaque fill) lines up with the page behind it
+   seamlessly. */
 @utility bg-page {
   background-color: var(--paper);
   background-image:
-    radial-gradient(120% 80% at 15% 0%, var(--glow), transparent 60%),
-    radial-gradient(circle, var(--dot) 1px, transparent 1.4px), var(--grain);
+    radial-gradient(90% 70% at 88% 0%, var(--light-cool), transparent 62%),
+    radial-gradient(80% 60% at 0% 100%, var(--light-warm), transparent 62%),
+    radial-gradient(110% 70% at 8% 0%, var(--light-bloom), transparent 55%),
+    var(--grain);
   background-size:
     100% 100%,
-    24px 24px,
+    100% 100%,
+    100% 100%,
     200px 200px;
   background-attachment: fixed;
 }
@@ -238,18 +260,20 @@ body {
 /* ---------------------------------------------------------------------------
    Glass
 
-   `.glass` is the control layer: inputs panel, toolbar, tiles, buttons.
-   `.glass-strong` adds near-opaque frosting for surfaces that float over
-   arbitrary content (menus, dialogs, chart tooltips) so text stays legible.
-   The rim is a 1px gradient border drawn with a mask so it catches light on
-   the top-left and fades on the far edges.
+   Glass is for instruments only: the toolbar, the inputs panel, buttons,
+   menus, dialogs, tooltips, and the lens over the key-figures table. Results
+   are typeset on the paper. `.glass-strong` adds near-opaque frosting for
+   surfaces that float over arbitrary content (menus, dialogs, chart tooltips)
+   so text stays legible. The rim is a 1px gradient border drawn with a mask so
+   it catches light on the top-left and fades on the far edges; the inset
+   shadow along the bottom edge gives the slab thickness.
 --------------------------------------------------------------------------- */
 @layer components {
   .glass {
     position: relative;
     background: var(--glass-fill);
-    -webkit-backdrop-filter: blur(6px) saturate(140%) brightness(1.04);
-    backdrop-filter: blur(6px) saturate(140%) brightness(1.04);
+    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    backdrop-filter: blur(22px) saturate(170%);
     box-shadow: var(--glass-shadow);
   }
 
@@ -270,8 +294,42 @@ body {
 
   .glass-strong {
     background: var(--glass-fill-strong);
-    -webkit-backdrop-filter: blur(18px) saturate(150%);
-    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+  }
+
+  /* Key figures: a ruled table set on the paper (booktabs: a heavy rule above
+     and below, hairlines between cells). Each cell draws its own left and top
+     hairline just outside its box; the ones on the table's outer edges fall
+     outside the clip. The glass lens is positioned behind the selected cell
+     by SummaryCards. */
+  .key-figures {
+    position: relative;
+    display: grid;
+    overflow: hidden;
+    border-top: 1.5px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .key-figure {
+    position: relative;
+    z-index: 1;
+    text-align: left;
+    box-shadow:
+      -1px 0 0 var(--hair),
+      0 -1px 0 var(--hair);
+  }
+
+  .key-figure-lens {
+    position: absolute;
+    z-index: 0;
+    border-radius: 14px;
+    transition:
+      left 420ms cubic-bezier(0.3, 1.35, 0.5, 1),
+      top 420ms cubic-bezier(0.3, 1.35, 0.5, 1),
+      width 420ms cubic-bezier(0.3, 1.35, 0.5, 1),
+      height 420ms cubic-bezier(0.3, 1.35, 0.5, 1),
+      opacity 200ms ease;
   }
 
   /* Text inputs and selects: a recessed well inside the glass. */
@@ -279,7 +337,7 @@ body {
     display: block;
     width: 100%;
     padding: 0.4375rem 0.6875rem;
-    border-radius: 0.625rem;
+    border-radius: 0.5rem;
     background: var(--well);
     box-shadow: inset 0 0 0 0.5px var(--well-edge);
     color: var(--ink);
@@ -521,21 +579,6 @@ body {
   left: -10000px;
   top: 0;
   width: 720px;
-}
-
-/*
- * The summary tiles switch to 4 columns at Tailwind's `md` breakpoint, which
- * measures the viewport — not this fixed 720px container — so on a wide
- * screen they would overflow the page. Pin them to two columns.
- */
-.print-report .print-summary .summary-tiles {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-/* The summary's expand chevrons are an interactive affordance with no
-   meaning on paper. */
-.print-report .chevron {
-  display: none;
 }
 
 /* Glass and paper texture don't belong on a printed page: flatten every glass

@@ -82,12 +82,14 @@ Uses `@tailwindcss/vite` plugin. Dark mode requires this CSS directive:
 
 ### Design system (`src/index.css`)
 
-Results are set directly on the page; controls float above it in "liquid glass". Light mode is neutral paper ("vellum"), dark mode is honed slate.
+Two materials: results are typeset directly on the page like a paper; instruments float above it in "liquid glass". Light mode is bright neutral paper ("vellum") with daylight gradients, dark mode is honed slate with a cool bloom. The page light (`bg-page`) is what the glass blurs.
 
-- **Theme tokens, not `dark:` variants.** Colors are CSS variables with light values on `:root` and dark values on `.dark`, exposed to Tailwind via `@theme inline`: `text-ink` / `text-ink-2`, `border-hair` / `border-hair-strong`, `bg-well`, `bg-hover`, data colors (`text-pretax`, `text-roth`, `text-taxable`, `text-hsa`, `text-tax`, `text-social`, …) and `text-good` / `text-bad` / `text-warn`. Components should not use Tailwind palette colors or `dark:`. `.dark` is applied before first paint by an inline script in `index.html`.
-- **Type.** Computer Modern Serif (CMU, vendored unmodified in `src/assets/fonts/` with its OFL license) for figures and headings via `font-serif` or the `num` utility (serif + tabular figures). Interface text uses the system UI font.
-- **Component classes.** `.glass` (control surfaces), `.glass-strong` (menus, dialogs, tooltips that float over content), `.field` / `.field-label` / `.field-hint` / `.field-error`, `.btn` + `.btn-primary` / `.btn-ghost` / `.btn-danger`, `.icon-btn`. `SegmentedControl` is the tab strip with the sliding glass lens; `Figure` is an on-page section heading for charts and tables.
-- **Summary tiles** use `formatCompactCurrency` (`src/utils/format.ts`: $14.5k, $1.44M); the headline card keeps full figures.
+- **Serif on paper, sans on glass.** Anything set on the page (headline figure, key figures, timeline, chart legends and captions, data-table headers, methodology prose, footer) is Computer Modern: italic for labels and captions, roman for figures and prose. Anything on glass (toolbar, inputs panel, buttons, menus, tooltips) is the system UI sans. Figures are Computer Modern everywhere via the `num` utility (serif + tabular lining figures).
+- **Theme tokens, not `dark:` variants.** Colors are CSS variables with light values on `:root` and dark values on `.dark`, exposed to Tailwind via `@theme inline`: `text-ink` / `text-ink-2` / `text-ink-3`, `border-hair` / `border-hair-strong` / `border-rule` (table rules), `bg-well`, `bg-hover`, data colors (`text-pretax`, `text-roth`, `text-taxable`, `text-hsa`, `text-tax`, `text-social`, …) and `text-good` / `text-bad` / `text-warn`. Components should not use Tailwind palette colors or `dark:`. `.dark` is applied before first paint by an inline script in `index.html`.
+- **Type.** Computer Modern Serif (CMU, vendored unmodified in `src/assets/fonts/` with its OFL license) via `font-serif` or `num`.
+- **Component classes.** `.glass` (instrument surfaces: 22px blur, lit rim, a thin dark bottom edge for thickness), `.glass-strong` (menus, dialogs, tooltips that float over content), `.key-figures` / `.key-figure` / `.key-figure-lens` (the ruled key-figures table and the glass lens `SummaryCards` slides behind the selected cell), `.field` / `.field-label` / `.field-hint` / `.field-error`, `.btn` + `.btn-primary` / `.btn-ghost` / `.btn-danger`, `.icon-btn`. `SegmentedControl` is the tab strip with the sliding glass lens; `Figure` is an on-page heading for charts and tables with an italic caption beneath.
+- **Radii.** 20px for the inputs panel and dialogs, 14px for the lens and menus, 8px for fields; buttons and the toolbar are pills.
+- **Key figures** use `formatCompactCurrency` (`src/utils/format.ts`: $14.5k, $1.44M); the headline figure keeps full digits.
 
 ### Chart Components
 

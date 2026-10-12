@@ -29,8 +29,8 @@ interface Item {
   label: string;
 }
 
-const ROW_ABOVE = 22;
-const ROW_BELOW = 40;
+const ROW_ABOVE = 23;
+const ROW_BELOW = 42;
 const LINE_ZONE = 18;
 const GAP = 14;
 
@@ -251,8 +251,8 @@ export function RetirementTimeline({
                   className={`absolute whitespace-nowrap flex flex-col ${item.align === 'start' ? 'items-start' : item.align === 'end' ? 'items-end' : 'items-center'}`}
                   style={{ ...horizontal(item), top: lineY + LINE_ZONE / 2 + 2 + row * ROW_BELOW }}
                 >
-                  <span className="num text-base leading-tight text-ink">{item.age}</span>
-                  <span className="text-xs text-ink-2">{item.label}</span>
+                  <span className="num text-[17px] leading-tight text-ink">{item.age}</span>
+                  <span className="font-serif text-[13px] text-ink-2">{item.label}</span>
                 </span>
               ) : (
                 <span
@@ -260,8 +260,8 @@ export function RetirementTimeline({
                   className={`absolute whitespace-nowrap flex items-baseline gap-1.5 ${item.kind === 'alert' ? 'text-bad' : 'text-ink-2'}`}
                   style={{ ...horizontal(item), top: lineY - LINE_ZONE / 2 - (row + 1) * ROW_ABOVE + 4 }}
                 >
-                  <span className="text-xs">{item.label}</span>
-                  <span className={`num text-[15px] ${item.kind === 'alert' ? 'text-bad' : 'text-ink'}`}>{item.age}</span>
+                  <span className="font-serif text-[13px]">{item.label}</span>
+                  <span className={`num text-base ${item.kind === 'alert' ? 'text-bad' : 'text-ink'}`}>{item.age}</span>
                 </span>
               )}
             </div>

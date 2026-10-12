@@ -6,7 +6,7 @@ import {
   Legend,
   Tooltip,
 } from 'recharts';
-import { CHART_THEME, TOOLTIP_CLASS } from './chartTheme';
+import { CHART_THEME, LEGEND_PROPS, TOOLTIP_CLASS } from './chartTheme';
 import { Account, AccumulationResult } from '../types';
 import { useCountry } from '../contexts/CountryContext';
 import { CHART_COLORS } from '../utils/constants';
@@ -124,7 +124,7 @@ export function ChartComposition({ accounts, result, animate = true }: ChartComp
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* By Account Type */}
       <div>
-        <h4 className="text-[13px] font-medium text-ink-2 text-center mb-2">
+        <h4 className="font-serif italic text-[14.5px] text-ink-2 text-center mb-2">
           By account type
         </h4>
         <div className="h-64 touch-pan-y">
@@ -149,7 +149,8 @@ export function ChartComposition({ accounts, result, animate = true }: ChartComp
               </Pie>
               <Tooltip content={<CustomTooltip total={total} />} />
               <Legend
-                wrapperStyle={{ fontSize: '12px' }}
+                {...LEGEND_PROPS}
+                wrapperStyle={{ ...LEGEND_PROPS.wrapperStyle, paddingTop: 0 }}
                 formatter={(value) => <span style={{ color: CHART_THEME.legend }}>{value}</span>}
               />
             </PieChart>
@@ -159,7 +160,7 @@ export function ChartComposition({ accounts, result, animate = true }: ChartComp
 
       {/* By Account */}
       <div>
-        <h4 className="text-[13px] font-medium text-ink-2 text-center mb-2">
+        <h4 className="font-serif italic text-[14.5px] text-ink-2 text-center mb-2">
           By account
         </h4>
         <div className="h-64 touch-pan-y">
@@ -184,7 +185,8 @@ export function ChartComposition({ accounts, result, animate = true }: ChartComp
               </Pie>
               <Tooltip content={<CustomTooltip total={total} />} />
               <Legend
-                wrapperStyle={{ fontSize: '12px' }}
+                {...LEGEND_PROPS}
+                wrapperStyle={{ ...LEGEND_PROPS.wrapperStyle, paddingTop: 0 }}
                 formatter={(value) => <span style={{ color: CHART_THEME.legend }}>{value}</span>}
               />
             </PieChart>

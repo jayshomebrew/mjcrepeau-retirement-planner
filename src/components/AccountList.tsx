@@ -56,7 +56,7 @@ export function AccountList({ accounts, profile, countryConfig, onAdd, onUpdate,
   return (
     <div>
       {showForm && (
-        <div className="rounded-2xl bg-well px-3.5 py-4 mb-3">
+        <div className="rounded-xl bg-well px-3.5 py-4 mb-3">
           <h4 className="font-serif text-base font-bold text-ink mb-3">
             {editingAccount ? 'Edit account' : 'New account'}
           </h4>
@@ -131,7 +131,7 @@ export function AccountList({ accounts, profile, countryConfig, onAdd, onUpdate,
       )}
 
       {!showForm && (
-        <button onClick={() => setShowForm(true)} className="glass btn w-full mt-3 text-ink hover:bg-hover">
+        <button onClick={() => setShowForm(true)} className="btn btn-primary w-full mt-3">
           Add account
         </button>
       )}

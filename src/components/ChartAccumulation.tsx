@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { AXIS_PROPS, CHART_THEME, LINE_CURSOR, TOOLTIP_CLASS } from './chartTheme';
+import { AXIS_PROPS, CHART_THEME, LEGEND_PROPS, LINE_CURSOR, TOOLTIP_CLASS } from './chartTheme';
 import { Account, AccumulationResult, getTaxTreatment } from '../types';
 import { CHART_COLORS } from '../utils/constants';
 
@@ -116,7 +116,7 @@ export function ChartAccumulation({ accounts, result, animate = true }: ChartAcc
           />
           <Tooltip content={<CustomTooltip accounts={accounts} />} cursor={LINE_CURSOR} />
           <Legend
-            wrapperStyle={{ paddingTop: '10px' }}
+            {...LEGEND_PROPS}
             formatter={(value) => {
               const account = accounts.find(a => a.id === value);
               return <span style={{ color: CHART_THEME.legend }}>{account?.name || value}</span>;

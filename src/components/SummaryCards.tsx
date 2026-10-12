@@ -1,4 +1,4 @@
-import { ReactNode, useId, useState } from 'react';
+import { ReactNode, useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
 import {
   Account,
   AccumulationResult,
@@ -27,18 +27,6 @@ function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-const Chevron = ({ open }: { open: boolean }) => (
-  <svg
-    className={`chevron w-3.5 h-3.5 shrink-0 text-ink-3 transition-transform ${open ? 'rotate-180' : ''}`}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M19 9l-7 7-7-7" />
-  </svg>
-);
-
 const WarningIcon = () => (
   <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -49,22 +37,22 @@ function Callout({ tone, title, children }: { tone: 'warn' | 'bad'; title: strin
   const toneClasses =
     tone === 'warn' ? 'border-warn/40 bg-warn/10 text-warn' : 'border-bad/40 bg-bad/10 text-bad';
   return (
-    <div role="alert" className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${toneClasses}`}>
+    <div role="alert" className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${toneClasses}`}>
       <WarningIcon />
-      <div>
-        <h4 className="text-sm font-semibold">{title}</h4>
-        <p className="text-sm text-ink mt-0.5">{children}</p>
+      <div className="font-serif">
+        <h4 className="text-[15px] font-bold">{title}</h4>
+        <p className="text-[14.5px] leading-relaxed text-ink mt-0.5">{children}</p>
       </div>
     </div>
   );
 }
 
-/** Formula line and supporting notes for a figure's "how it's calculated" panel. */
+/** Formula line and supporting notes for a figure's "how it's calculated" note. */
 function Derivation({ formula, children }: { formula?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="space-y-2.5">
-      {formula && <p className="num text-[15px] text-ink leading-snug">{formula}</p>}
-      {children && <div className="text-[13px] text-ink-2 leading-relaxed space-y-1.5">{children}</div>}
+    <div className="font-serif text-[14.5px] leading-relaxed">
+      {formula && <p className="num text-ink mb-1.5">{formula}</p>}
+      {children && <div className="text-ink-2 space-y-1">{children}</div>}
     </div>
   );
 }
@@ -74,7 +62,7 @@ interface Tile {
   label: string;
   /** Exact value: shown on hover and to screen readers. */
   fullValue: string;
-  /** Compact value shown in the tile. */
+  /** Compact value shown in the table. */
   value: string;
   valueClassName?: string;
   note?: string;
@@ -82,6 +70,10 @@ interface Tile {
   formula?: ReactNode;
   details?: ReactNode;
 }
+
+/** Inset of the lens from the edges of the cell it sits behind. */
+const LENS_INSET_X = 6;
+const LENS_INSET_Y = 7;
 
 export function SummaryCards({
   accounts,
@@ -99,6 +91,64 @@ export function SummaryCards({
   const [heroOpen, setHeroOpen] = useState(false);
   const heroDetailsId = useId();
   const tileDetailsId = useId();
+
+  // The glass lens sits behind the selected key figure. It is placed from the
+  // cell's measured offset, so it follows wrapping and font swaps. When the
+  // selection closes it fades out in place; the next selection snaps rather
+  // than sweeping in from wherever it was last.
+  const tableRef = useRef<HTMLDivElement>(null);
+  const cellRefs = useRef(new Map<string, HTMLButtonElement>());
+  const [lens, setLens] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [animate, setAnimate] = useState(false);
+
+  const measure = useCallback(() => {
+    if (!openTile) return;
+    const cell = cellRefs.current.get(openTile);
+    if (!cell) return;
+    const next = {
+      left: cell.offsetLeft + LENS_INSET_X,
+      top: cell.offsetTop + LENS_INSET_Y,
+      width: cell.offsetWidth - LENS_INSET_X * 2,
+      height: cell.offsetHeight - LENS_INSET_Y * 2,
+    };
+    setLens(prev =>
+      prev &&
+      prev.left === next.left &&
+      prev.top === next.top &&
+      prev.width === next.width &&
+      prev.height === next.height
+        ? prev
+        : next
+    );
+  }, [openTile]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure]);
+
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    if (!table) return;
+    const observer = new ResizeObserver(() => measure());
+    observer.observe(table);
+    document.fonts?.ready.then(measure);
+    return () => observer.disconnect();
+  }, [measure]);
+
+  // Enable the slide only once the lens has a resting place.
+  useLayoutEffect(() => {
+    if (openTile && lens && !animate) {
+      const frame = requestAnimationFrame(() => setAnimate(true));
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [openTile, lens, animate]);
+
+  const selectTile = (id: string | null) => {
+    // Opening from closed: snap to the new cell instead of sweeping in from
+    // wherever the lens faded out last time.
+    if (id && !openTile) setAnimate(false);
+    setOpenTile(id);
+  };
 
   const { totalAtRetirement, breakdownByGroup } = accumulationResult;
   const accountGroupings = countryConfig.getAccountGroupings();
@@ -178,7 +228,7 @@ export function SummaryCards({
     : 0;
 
   // "≈ $X today" note. Omitted when nominal and real round to the same value
-  // (already retired, zero inflation), so tiles don't repeat themselves.
+  // (already retired, zero inflation), so figures don't repeat themselves.
   const todayNote = (nominal: number, real: number) =>
     Math.round(nominal) === Math.round(real) ? undefined : `≈ ${formatCompactCurrency(real)} today`;
 
@@ -324,6 +374,10 @@ export function SummaryCards({
 
   const activeTile = tiles.find(t => t.id === openTile);
 
+  // Four figures sit in one row; a fifth (penalties) splits 3 + 2 until there
+  // is room for all five.
+  const columns = tiles.length > 4 ? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-5' : 'grid-cols-2 md:grid-cols-4';
+
   // Timeline milestones: income that starts during the plan, plus the age
   // required minimum withdrawals begin if any traditional account exists.
   const events: TimelineEvent[] = incomeStreams.map(s => ({ age: s.startAge, label: s.name }));
@@ -340,8 +394,10 @@ export function SummaryCards({
     });
   }
 
+  const showReal = Math.round(totalAtRetirement) !== Math.round(totalAtRetirementReal);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {hasInvalidAges && (
         <Callout tone="warn" title="Check your ages">
           Current age ({profile.currentAge}) should be less than retirement age ({profile.retirementAge}), which
@@ -349,60 +405,54 @@ export function SummaryCards({
         </Callout>
       )}
 
-      {/* At retirement: the headline figure, in full */}
-      <section className="glass rounded-[28px] px-5 py-5 sm:px-7 sm:py-6" aria-label="At retirement">
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+      {/* At retirement: the headline figure, typeset in full on the page */}
+      <section aria-label="At retirement">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
           <div className="min-w-0">
-            <p className="text-[13px] font-medium text-ink-2">Portfolio at retirement, age {profile.retirementAge}</p>
-            <p className="num text-[2.5rem] sm:text-[3.375rem] leading-none tracking-[-0.015em] text-ink mt-2">
+            <p className="font-serif italic text-[15px] text-ink-2">
+              Portfolio at retirement, age {profile.retirementAge}
+            </p>
+            <p className="num text-[2.75rem] sm:text-[3.625rem] leading-none tracking-[-0.015em] text-ink mt-2">
               {formatCurrency(totalAtRetirement)}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {Math.round(totalAtRetirement) !== Math.round(totalAtRetirementReal) && (
-              <p className="text-[13px] text-ink-2">
-                <span className="num text-[15px] text-ink">{formatCurrency(totalAtRetirementReal)}</span> in today's dollars
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={() => setHeroOpen(open => !open)}
-              aria-expanded={heroOpen}
-              aria-controls={heroDetailsId}
-              aria-label={heroOpen ? 'Hide calculation details' : 'Show calculation details'}
-              className="icon-btn -mr-2"
-            >
-              <Chevron open={heroOpen} />
-            </button>
-          </div>
+          {showReal && (
+            <p className="font-serif text-[15px] text-ink-2">
+              <span className="num text-[17px] text-ink">{formatCurrency(totalAtRetirementReal)}</span> in today's
+              dollars
+            </p>
+          )}
         </div>
 
         {groups.length > 0 && (
-          <>
-            <div className="flex gap-[3px] h-2.5 mt-6 mb-4" aria-hidden="true">
-              {groups.map(g => (
-                <span key={g.id} className="rounded-full min-w-[6px]" style={{ flexGrow: g.amount, backgroundColor: g.color }} />
-              ))}
-            </div>
-            <dl className="grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-x-6 gap-y-4">
-              {groups.map(g => (
-                <div key={g.id} className="min-w-0">
-                  <dt className="flex items-center gap-2 text-[13px] text-ink-2">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: g.color }} aria-hidden="true" />
-                    {g.label}
-                  </dt>
-                  <dd className="mt-1 flex items-baseline gap-2 flex-wrap">
-                    <span className="num text-[1.375rem] leading-tight text-ink">{formatCurrency(g.amount)}</span>
-                    <span className="text-xs text-ink-2">{Math.round(g.share * 100)}%</span>
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </>
+          <div className="flex gap-[3px] h-1.5 mt-5 mb-2.5" aria-hidden="true">
+            {groups.map(g => (
+              <span key={g.id} className="rounded-[3px] min-w-[6px]" style={{ flexGrow: g.amount, backgroundColor: g.color }} />
+            ))}
+          </div>
         )}
+        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 font-serif text-[14.5px] text-ink-2">
+          {groups.map(g => (
+            <span key={g.id} className="flex items-baseline">
+              <span className="w-2 h-2 rounded-full shrink-0 mr-2 relative -top-px" style={{ backgroundColor: g.color }} aria-hidden="true" />
+              {g.label}
+              <span className="num text-ink ml-2">{formatCurrency(g.amount)}</span>
+              <span className="text-[13px] text-ink-3 ml-1.5">{Math.round(g.share * 100)}%</span>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={() => setHeroOpen(open => !open)}
+            aria-expanded={heroOpen}
+            aria-controls={heroDetailsId}
+            className="no-print ml-auto italic text-[13.5px] text-ink-3 hover:text-ink underline-offset-4 hover:underline"
+          >
+            {heroOpen ? 'Hide calculation' : 'How this is calculated'}
+          </button>
+        </div>
 
         {heroOpen && (
-          <div id={heroDetailsId} className="mt-5 pt-4 border-t border-hair">
+          <div id={heroDetailsId} className="mt-3 max-w-[64ch]">
             <Derivation formula={`Sum of all account balances after ${yearsToRetirement} years of growth`}>
               <ul className="space-y-0.5">
                 {groups.map(g => (
@@ -420,33 +470,47 @@ export function SummaryCards({
         )}
       </section>
 
-      {/* During retirement: compact tiles, one shared details panel */}
+      {/* During retirement: a ruled table of key figures; a glass lens marks the selected one */}
       <section aria-label="During retirement">
-        <div className="summary-tiles grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-3">
+        <div ref={tableRef} className={`key-figures ${columns}`}>
+          {lens && (
+            <span
+              aria-hidden="true"
+              className="key-figure-lens glass"
+              style={{
+                ...lens,
+                opacity: openTile ? 1 : 0,
+                transitionProperty: animate ? undefined : 'opacity',
+              }}
+            />
+          )}
           {tiles.map(tile => {
             const isOpen = tile.id === openTile;
             return (
               <button
                 key={tile.id}
+                ref={el => {
+                  if (el) cellRefs.current.set(tile.id, el);
+                  else cellRefs.current.delete(tile.id);
+                }}
                 type="button"
-                onClick={() => setOpenTile(isOpen ? null : tile.id)}
+                onClick={() => selectTile(isOpen ? null : tile.id)}
                 aria-expanded={isOpen}
                 aria-controls={tileDetailsId}
-                className={`glass rounded-[20px] px-4 pt-3.5 pb-3.5 text-left transition-[background] ${isOpen ? 'bg-[var(--lens)]' : ''}`}
+                className="key-figure group px-4 sm:px-5 pt-4 pb-3.5"
               >
-                <span className="flex items-start justify-between gap-2">
-                  <span className="text-[13px] font-medium text-ink-2 leading-snug">{tile.label}</span>
-                  <Chevron open={isOpen} />
+                <span className="block font-serif italic text-[14.5px] leading-snug text-ink-2 underline-offset-[5px] decoration-hair-strong group-hover:underline">
+                  {tile.label}
                 </span>
                 <span
-                  className={`block num text-[1.75rem] leading-tight mt-2 ${tile.valueClassName ?? 'text-ink'}`}
+                  className={`block num text-[1.75rem] md:text-[1.9375rem] leading-[1.1] tracking-[-0.01em] mt-2 mb-1 ${tile.valueClassName ?? 'text-ink'}`}
                   title={tile.fullValue}
                 >
                   {tile.value}
                   <span className="sr-only"> ({tile.fullValue})</span>
                 </span>
                 {tile.note && (
-                  <span className={`block text-xs mt-1 ${tile.noteClassName ?? 'text-ink-2'}`}>{tile.note}</span>
+                  <span className={`block font-serif text-[13.5px] ${tile.noteClassName ?? 'text-ink-3'}`}>{tile.note}</span>
                 )}
               </button>
             );
@@ -454,10 +518,10 @@ export function SummaryCards({
         </div>
 
         {activeTile && (
-          <div id={tileDetailsId} className="glass rounded-[20px] px-5 py-4 mt-3">
-            <div className="flex items-baseline justify-between gap-4 mb-2.5">
-              <h4 className="font-serif text-base font-bold text-ink">{activeTile.label}</h4>
-              <span className="num text-base text-ink">{activeTile.fullValue}</span>
+          <div id={tileDetailsId} className="mt-3.5 pl-4 sm:pl-5 max-w-[64ch]">
+            <div className="flex items-baseline gap-3.5 mb-1 font-serif">
+              <h4 className="text-[15px] font-bold text-ink">{activeTile.label}</h4>
+              <span className="num text-[15px] text-ink">{activeTile.fullValue}</span>
             </div>
             <Derivation formula={activeTile.formula}>{activeTile.details}</Derivation>
           </div>

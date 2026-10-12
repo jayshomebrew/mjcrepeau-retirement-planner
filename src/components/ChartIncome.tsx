@@ -10,7 +10,7 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
-import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS } from './chartTheme';
+import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS, LEGEND_PROPS } from './chartTheme';
 import { RetirementResult, IncomeStream } from '../types';
 import { CHART_COLORS } from '../utils/constants';
 import { useCountry } from '../contexts/CountryContext';
@@ -162,7 +162,7 @@ export function ChartIncome({ result, incomeStreams = [], animate = true }: Char
           />
           <Tooltip content={<CustomTooltip result={result} currency={currency} />} cursor={BAR_CURSOR} />
           <Legend
-            wrapperStyle={{ paddingTop: '10px' }}
+            {...LEGEND_PROPS}
             formatter={(value) => <span style={{ color: CHART_THEME.legend }}>{value}</span>}
           />
           <ReferenceLine y={0} stroke={CHART_THEME.axis} />

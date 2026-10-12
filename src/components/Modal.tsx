@@ -31,7 +31,7 @@ export function Modal({ title, children, actions, onClose }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="glass glass-strong rounded-[24px] p-6 w-full max-w-md"
+        className="glass glass-strong rounded-[20px] p-6 w-full max-w-md"
       >
         <h3 id={titleId} className="font-serif text-xl font-bold text-ink mb-2">
           {title}

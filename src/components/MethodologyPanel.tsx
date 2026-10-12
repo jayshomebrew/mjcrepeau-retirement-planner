@@ -53,8 +53,8 @@ function formatBracketRange(min: number, max: number, currency: string = 'USD'):
 
 /* ---------------------------------------------------------------------------
    Layout pieces. The methodology is long-form reading, so it is set directly
-   on the page like a paper: serif headings, sans body copy, formulas in
-   Computer Modern on a recessed well, and booktabs-style tables.
+   on the page like a paper: serif throughout, formulas in Computer Modern on
+   a recessed well, and booktabs-style tables.
 --------------------------------------------------------------------------- */
 
 function Section({ title, children }: { title: ReactNode; children: ReactNode }) {
@@ -149,7 +149,7 @@ function BooktabsTable({ columns, children }: { columns: Column[]; children: Rea
               <th
                 key={column.label}
                 scope="col"
-                className={`${CELL} text-xs font-medium text-ink-2 ${
+                className={`${CELL} italic font-normal text-[14px] text-ink-2 ${
                   column.align === 'right' ? 'text-right' : 'text-left'
                 }`}
               >
@@ -165,7 +165,7 @@ function BooktabsTable({ columns, children }: { columns: Column[]; children: Rea
 }
 
 function TableNote({ children }: { children: ReactNode }) {
-  return <p className="mt-3 text-[13px] text-ink-2">{children}</p>;
+  return <p className="mt-3 italic text-[14px] text-ink-2">{children}</p>;
 }
 
 const WarningIcon = () => (
@@ -205,12 +205,12 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
   const filingStatusLabel = isMarried ? 'married filing jointly' : 'single';
 
   return (
-    <div className="max-w-[70ch] space-y-12 text-[15px] leading-relaxed text-ink-2">
+    <div className="max-w-[66ch] space-y-12 font-serif text-[15.5px] leading-[1.6] text-ink-2">
       {/* Overview */}
       <section>
         <div className="mb-4">
           <h3 className="font-serif text-2xl font-bold text-ink">How this calculator works</h3>
-          <p className="mt-0.5 text-[13px] text-ink-2">{isCanada ? 'Canada' : 'United States'}</p>
+          <p className="mt-0.5 italic text-[15px] text-ink-2">{isCanada ? 'Canada' : 'United States'}</p>
         </div>
         <p>This calculator projects your retirement finances in two phases:</p>
         <ol className="mt-3 list-decimal space-y-2 pl-5 marker:text-ink-2">

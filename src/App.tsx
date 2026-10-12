@@ -490,7 +490,7 @@ function AppContent() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)] gap-6 lg:gap-10 items-start">
         {/* Inputs: one glass panel floating over the page */}
-        <aside className="glass rounded-[26px] p-1.5" aria-label="Plan inputs">
+        <aside className="glass rounded-[20px] p-1.5" aria-label="Plan inputs">
           <SidebarSection
             title="Investment accounts"
             summary={formatMoney(totalBalance)}
@@ -549,7 +549,7 @@ function AppContent() {
           {!hasAccounts ? (
             <div className="py-16 text-center">
               <h3 className="font-serif text-2xl font-bold text-ink mb-2">Add your first account</h3>
-              <p className="text-sm text-ink-2 max-w-sm mx-auto mb-5">
+              <p className="font-serif text-[15px] leading-relaxed text-ink-2 max-w-sm mx-auto mb-5">
                 Projections, withdrawals, and taxes appear here once you add an investment account.
               </p>
               <button onClick={() => setExpandedSection('accounts')} className="btn btn-primary">
@@ -569,7 +569,10 @@ function AppContent() {
                     retirementResult={retirement}
                   />
 
-                  <Figure title="Portfolio composition at retirement">
+                  <Figure
+                    title="Portfolio composition at retirement"
+                    caption={`Balances at age ${profile.retirementAge} by tax treatment and by account.`}
+                  >
                     <ChartComposition accounts={accounts} result={accumulation} />
                   </Figure>
                 </>
@@ -579,7 +582,7 @@ function AppContent() {
                 <>
                   <Figure
                     title="Account growth"
-                    caption={`Age ${profile.currentAge} to ${profile.retirementAge}`}
+                    caption={`Projected balance of each account from age ${profile.currentAge} to ${profile.retirementAge}, in the dollars of each year.`}
                   >
                     <ChartAccumulation accounts={accounts} result={accumulation} />
                   </Figure>
@@ -601,16 +604,22 @@ function AppContent() {
                 <>
                   <Figure
                     title="Portfolio drawdown"
-                    caption={`Age ${profile.retirementAge} to ${profile.lifeExpectancy}`}
+                    caption={`Remaining balance of each account from age ${profile.retirementAge} to ${profile.lifeExpectancy}, after that year's withdrawals.`}
                   >
                     <ChartDrawdown accounts={accounts} result={retirement} />
                   </Figure>
 
-                  <Figure title="Annual retirement income">
+                  <Figure
+                    title="Annual retirement income"
+                    caption="Gross income by source each year, with the tax paid and what remains after it."
+                  >
                     <ChartIncome result={retirement} incomeStreams={incomeStreams} />
                   </Figure>
 
-                  <Figure title="Tax burden over time">
+                  <Figure
+                    title="Tax burden over time"
+                    caption="Tax paid each year of retirement, and the effective rate on that year's income."
+                  >
                     <ChartTax result={retirement} />
                   </Figure>
 

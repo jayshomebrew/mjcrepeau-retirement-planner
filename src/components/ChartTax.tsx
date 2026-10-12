@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS } from './chartTheme';
+import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS, LEGEND_PROPS } from './chartTheme';
 import { RetirementResult } from '../types';
 import { CHART_COLORS } from '../utils/constants';
 
@@ -132,7 +132,7 @@ export function ChartTax({ result, animate = true }: ChartTaxProps) {
           />
           <Tooltip content={<CustomTooltip result={result} />} cursor={BAR_CURSOR} />
           <Legend
-            wrapperStyle={{ paddingTop: '10px' }}
+            {...LEGEND_PROPS}
             formatter={(value) => <span style={{ color: CHART_THEME.legend }}>{value}</span>}
           />
           <Bar

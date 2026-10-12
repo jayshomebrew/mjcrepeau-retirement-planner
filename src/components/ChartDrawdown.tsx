@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { AXIS_PROPS, CHART_THEME, LINE_CURSOR, TOOLTIP_CLASS } from './chartTheme';
+import { AXIS_PROPS, CHART_THEME, LINE_CURSOR, TOOLTIP_CLASS, LEGEND_PROPS } from './chartTheme';
 import { Account, RetirementResult, getTaxTreatment } from '../types';
 import { CHART_COLORS } from '../utils/constants';
 
@@ -126,7 +126,7 @@ export function ChartDrawdown({ accounts, result, animate = true }: ChartDrawdow
           />
           <Tooltip content={<CustomTooltip accounts={accounts} result={result} />} cursor={LINE_CURSOR} />
           <Legend
-            wrapperStyle={{ paddingTop: '10px' }}
+            {...LEGEND_PROPS}
             formatter={(value) => {
               const account = accounts.find(a => a.id === value);
               return <span style={{ color: CHART_THEME.legend }}>{account?.name || value}</span>;

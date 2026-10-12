@@ -198,9 +198,6 @@ export function PrintReport({
       </Section>
 
       <Section title="Summary">
-        {/* The summary tiles lay out in up to 4 columns at the `md` breakpoint,
-            which keys off the viewport rather than this 720px container. See
-            the .print-summary rule in index.css. */}
         <div className="print-summary">
           <SummaryCards
             accounts={accounts}

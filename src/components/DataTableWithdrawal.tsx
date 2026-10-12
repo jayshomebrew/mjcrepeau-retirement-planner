@@ -64,7 +64,7 @@ const CELL = 'py-2 px-2';
 const STICKY = 'sticky left-0 bg-page';
 const STICKY_HOVER = 'group-hover:bg-[linear-gradient(var(--hover),var(--hover))]';
 
-const TH = `${CELL} align-bottom text-xs font-medium border-b border-hair-strong`;
+const TH = `${CELL} align-bottom font-serif italic text-[14px] font-normal border-b border-hair-strong`;
 const TH_AGE = `${TH} ${STICKY} text-left text-ink-2`;
 const TD = `${CELL} num text-[15px] border-b border-hair`;
 const TD_AGE = `${TD} ${STICKY} ${STICKY_HOVER} text-left text-ink`;
@@ -488,7 +488,7 @@ export function DataTableWithdrawal({
           </div>
 
           {/* Legend */}
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-ink-2">
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 font-serif text-[13px] text-ink-2">
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm bg-pretax" aria-hidden="true"></span>
               <span>Pre-tax (RMD required)</span>

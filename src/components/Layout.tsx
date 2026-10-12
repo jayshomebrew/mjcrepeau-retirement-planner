@@ -139,7 +139,7 @@ export function Layout({
 
       <footer className="max-w-7xl w-full mx-auto px-3 sm:px-6 pb-8">
         <div className="border-t border-hair pt-5 flex items-start justify-between gap-4">
-          <p className="text-xs text-ink-2 leading-relaxed max-w-2xl">
+          <p className="font-serif text-[13px] text-ink-2 leading-relaxed max-w-2xl">
             This tool provides estimates only. Consult a financial advisor for personalized advice.
             Tax calculations use {TAX_DATA_YEAR} federal brackets.
           </p>
