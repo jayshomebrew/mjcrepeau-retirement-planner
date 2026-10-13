@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { AXIS_PROPS, CHART_THEME, LEGEND_PROPS, LINE_CURSOR, TOOLTIP_CLASS } from './chartTheme';
+import { AXIS_PROPS, CHART_THEME, LEGEND_PROPS, LINE_CURSOR, TOOLTIP_CLASS, currencyAxisProps } from './chartTheme';
 import { Account, AccumulationResult, getTaxTreatment } from '../types';
 import { CHART_COLORS } from '../utils/constants';
 
@@ -21,16 +21,6 @@ interface ChartAccumulationProps {
    * or the chart prints blank.
    */
   animate?: boolean;
-}
-
-function formatCurrency(value: number): string {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toFixed(0)}`;
 }
 
 function formatTooltipValue(value: number): string {
@@ -109,11 +99,7 @@ export function ChartAccumulation({ accounts, result, animate = true }: ChartAcc
             dataKey="age"
             {...AXIS_PROPS}
           />
-          <YAxis
-            tickFormatter={formatCurrency}
-            {...AXIS_PROPS}
-            width={60}
-          />
+          <YAxis {...currencyAxisProps(Math.max(...result.yearlyBalances.map(y => y.totalBalance)))} />
           <Tooltip content={<CustomTooltip accounts={accounts} />} cursor={LINE_CURSOR} />
           <Legend
             {...LEGEND_PROPS}

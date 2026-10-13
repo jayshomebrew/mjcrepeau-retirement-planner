@@ -10,7 +10,7 @@ import {
   Legend,
   ReferenceLine,
 } from 'recharts';
-import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS, LEGEND_PROPS } from './chartTheme';
+import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS, LEGEND_PROPS, currencyAxisProps } from './chartTheme';
 import { RetirementResult, IncomeStream } from '../types';
 import { CHART_COLORS } from '../utils/constants';
 import { useCountry } from '../contexts/CountryContext';
@@ -24,16 +24,6 @@ interface ChartIncomeProps {
    * or the chart prints blank.
    */
   animate?: boolean;
-}
-
-function formatCurrency(value: number): string {
-  if (Math.abs(value) >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (Math.abs(value) >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toFixed(0)}`;
 }
 
 function formatTooltipValue(value: number, currency: string = 'USD'): string {
@@ -155,11 +145,7 @@ export function ChartIncome({ result, incomeStreams = [], animate = true }: Char
             dataKey="age"
             {...AXIS_PROPS}
           />
-          <YAxis
-            tickFormatter={formatCurrency}
-            {...AXIS_PROPS}
-            width={60}
-          />
+          <YAxis {...currencyAxisProps(Math.max(...chartData.map(d => d.gross)))} />
           <Tooltip content={<CustomTooltip result={result} currency={currency} />} cursor={BAR_CURSOR} />
           <Legend
             {...LEGEND_PROPS}

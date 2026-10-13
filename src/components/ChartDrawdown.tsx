@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { AXIS_PROPS, CHART_THEME, LINE_CURSOR, TOOLTIP_CLASS, LEGEND_PROPS } from './chartTheme';
+import { AXIS_PROPS, CHART_THEME, LINE_CURSOR, TOOLTIP_CLASS, LEGEND_PROPS, currencyAxisProps } from './chartTheme';
 import { Account, RetirementResult, getTaxTreatment } from '../types';
 import { CHART_COLORS } from '../utils/constants';
 
@@ -21,16 +21,6 @@ interface ChartDrawdownProps {
    * or the chart prints blank.
    */
   animate?: boolean;
-}
-
-function formatCurrency(value: number): string {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toFixed(0)}`;
 }
 
 function formatTooltipValue(value: number): string {
@@ -119,11 +109,7 @@ export function ChartDrawdown({ accounts, result, animate = true }: ChartDrawdow
             dataKey="age"
             {...AXIS_PROPS}
           />
-          <YAxis
-            tickFormatter={formatCurrency}
-            {...AXIS_PROPS}
-            width={60}
-          />
+          <YAxis {...currencyAxisProps(Math.max(...result.yearlyWithdrawals.map(y => y.totalRemainingBalance)))} />
           <Tooltip content={<CustomTooltip accounts={accounts} result={result} />} cursor={LINE_CURSOR} />
           <Legend
             {...LEGEND_PROPS}

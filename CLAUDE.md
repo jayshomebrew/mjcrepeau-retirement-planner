@@ -89,7 +89,10 @@ Two materials: results are typeset directly on the page like a paper; instrument
 - **Type.** Computer Modern Serif (CMU, vendored unmodified in `src/assets/fonts/` with its OFL license) via `font-serif` or `num`.
 - **Component classes.** `.glass` (instrument surfaces: 22px blur, lit rim, a thin dark bottom edge for thickness), `.glass-strong` (menus, dialogs, tooltips that float over content), `.key-figures` / `.key-figure` / `.key-figure-lens` (the ruled key-figures table and the glass lens `SummaryCards` slides behind the selected cell), `.field` / `.field-label` / `.field-hint` / `.field-error`, `.btn` + `.btn-primary` / `.btn-ghost` / `.btn-danger`, `.icon-btn`. `SegmentedControl` is the tab strip with the sliding glass lens; `Figure` is an on-page heading for charts and tables with an italic caption beneath.
 - **Radii.** 20px for the inputs panel and dialogs, 14px for the lens and menus, 8px for fields; buttons and the toolbar are pills.
-- **Key figures** use `formatCompactCurrency` (`src/utils/format.ts`: $14.5k, $1.44M); the headline figure keeps full digits.
+- **Key figures** use `formatCompactCurrency` (`src/utils/format.ts`: $14.5k, $1.44M); the headline figure keeps full digits. Chart axes use `formatAxisCurrency` ($2M, $150k) on a round scale from `niceTicks`, via `currencyAxisProps` in `chartTheme.ts`; Recharts' own "nice" domain is not applied consistently, so every currency axis sets `domain` and `ticks` explicitly.
+- **Callouts and notes** (`Callout` in `SummaryCards`, the methodology's limitations) are ruled remarks, not tinted cards: a 2px left rule and heading in the tone colour, body in ink, no fill. Nothing on the paper gets a filled box except formulas (`bg-well`).
+- **Number fields** (`NumberInput`) show grouped thousands at rest ("150,000") and raw digits while focused; separators in typed input are ignored.
+- **Empty table cells** use an en dash (–), never a hyphen.
 
 ### Chart Components
 

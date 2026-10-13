@@ -160,7 +160,7 @@ export function DataTableAccumulation({
                         <td className={`${TD} text-left text-ink-2`}>{yearData.year}</td>
                         <td className={`${TD} text-right text-ink`}>{formatCurrency(yearData.totalBalance)}</td>
                         <td className={`${TD} text-right ${growth >= 0 ? 'text-good' : 'text-bad'}`}>
-                          {index === 0 ? '-' : (growth >= 0 ? '+' : '') + formatCurrency(growth)}
+                          {index === 0 ? '–' : (growth >= 0 ? '+' : '') + formatCurrency(growth)}
                         </td>
                         <td className={`${TD} text-right text-ink-2`}>
                           {formatCurrency(totalContrib + totalMatch)}

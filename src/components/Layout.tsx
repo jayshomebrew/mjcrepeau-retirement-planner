@@ -70,8 +70,11 @@ export function Layout({
             Retirement planner
           </h1>
 
+          {/* Below lg the strip takes its own row and scrolls sideways; a mask
+              fades its clipped right edge so it reads as scrollable instead
+              of cut off. */}
           {tabs && (
-            <nav className="order-last w-full -ml-3.5 pb-1 overflow-x-auto scrollbar-hide lg:order-none lg:w-auto lg:ml-auto lg:mr-auto lg:pb-0">
+            <nav className="order-last w-full -ml-3.5 pb-1 pr-6 overflow-x-auto scrollbar-hide max-lg:[mask-image:linear-gradient(to_right,#000_calc(100%-2.25rem),transparent)] lg:order-none lg:w-auto lg:ml-auto lg:mr-auto lg:pb-0 lg:pr-0">
               {tabs}
             </nav>
           )}

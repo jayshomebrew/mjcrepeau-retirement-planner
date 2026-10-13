@@ -226,7 +226,7 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
           </li>
         </ol>
         {isCanada && (
-          <p className="mt-4 rounded-2xl border border-hair-strong px-4 py-3">
+          <p className="mt-4 border-l-2 border-hair-strong pl-4">
             <strong className="font-semibold text-ink">Canada mode:</strong> Uses Canadian tax brackets, RRIF
             minimums, and CPP/OAS benefits. Provincial taxes are calculated for {provinceName}.
           </p>
@@ -235,7 +235,9 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
 
       {/* Your current assumptions */}
       <Section title="Your current assumptions">
-        <div className="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-2">
+        {/* One column: the reading measure is too narrow for two side by side
+            without wrapping values like "Married filing jointly". */}
+        <div className="grid grid-cols-1 gap-y-6">
           <div>
             <h4 className="mb-1 font-serif text-base font-bold text-ink">Economic</h4>
             <dl className="divide-y divide-hair">
@@ -597,7 +599,8 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
       </Section>
 
       {/* Important notes */}
-      <section className="rounded-2xl border border-warn/40 bg-warn/10 px-5 py-4">
+      {/* Set as a ruled remark, like the callouts on the summary page. */}
+      <section className="border-l-2 border-warn pl-5">
         <h3 className="mb-3 flex items-center gap-2.5 font-serif text-xl font-bold text-warn">
           <WarningIcon />
           Important notes & limitations

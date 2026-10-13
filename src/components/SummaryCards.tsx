@@ -33,11 +33,15 @@ const WarningIcon = () => (
   </svg>
 );
 
+/**
+ * A remark set in the margin of the page: a rule in the tone colour, the
+ * title in that colour, the body in ink. No fill, so it reads as typeset
+ * rather than as a card floating over the paper.
+ */
 function Callout({ tone, title, children }: { tone: 'warn' | 'bad'; title: string; children: ReactNode }) {
-  const toneClasses =
-    tone === 'warn' ? 'border-warn/40 bg-warn/10 text-warn' : 'border-bad/40 bg-bad/10 text-bad';
+  const toneClasses = tone === 'warn' ? 'border-warn text-warn' : 'border-bad text-bad';
   return (
-    <div role="alert" className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${toneClasses}`}>
+    <div role="alert" className={`flex items-start gap-3 border-l-2 pl-4 py-0.5 ${toneClasses}`}>
       <WarningIcon />
       <div className="font-serif">
         <h4 className="text-[15px] font-bold">{title}</h4>

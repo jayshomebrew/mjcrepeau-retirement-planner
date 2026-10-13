@@ -9,7 +9,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS, LEGEND_PROPS } from './chartTheme';
+import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS, LEGEND_PROPS, currencyAxisProps } from './chartTheme';
+import { niceTicks } from '../utils/format';
 import { RetirementResult } from '../types';
 import { CHART_COLORS } from '../utils/constants';
 
@@ -21,16 +22,6 @@ interface ChartTaxProps {
    * or the chart prints blank.
    */
   animate?: boolean;
-}
-
-function formatCurrency(value: number): string {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toFixed(0)}`;
 }
 
 function formatTooltipValue(value: number): string {
@@ -107,28 +98,27 @@ export function ChartTax({ result, animate = true }: ChartTaxProps) {
     };
   });
 
+  // The rate axis gets the same round-number treatment as the currency axis,
+  // and never drops below a 0–20% scale so a low flat rate still reads.
+  const rateAxis = niceTicks(Math.max(20, ...chartData.map(d => d.effectiveRate)));
+
   return (
     <div className="w-full h-80 touch-pan-y">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 10, right: 50, left: 0, bottom: 0 }}>
+        <ComposedChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={CHART_THEME.grid} />
           <XAxis
             dataKey="age"
             {...AXIS_PROPS}
           />
-          <YAxis
-            yAxisId="left"
-            tickFormatter={formatCurrency}
-            {...AXIS_PROPS}
-            width={60}
-          />
+          <YAxis yAxisId="left" {...currencyAxisProps(Math.max(...chartData.map(d => d.totalTax)))} />
           <YAxis
             yAxisId="right"
             orientation="right"
-            tickFormatter={(v) => `${v.toFixed(0)}%`}
+            tickFormatter={(v: number) => `${v}%`}
             {...AXIS_PROPS}
-            domain={[0, 40]}
-            width={50}
+            {...rateAxis}
+            width={44}
           />
           <Tooltip content={<CustomTooltip result={result} />} cursor={BAR_CURSOR} />
           <Legend

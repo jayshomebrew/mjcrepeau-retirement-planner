@@ -32,7 +32,7 @@ function formatCurrencyWithCode(value: number, currency: string = 'USD'): string
 }
 
 function formatPercent(value: number): string {
-  if (!isFinite(value) || isNaN(value)) return '-';
+  if (!isFinite(value) || isNaN(value)) return '–';
   return `${(value * 100).toFixed(1)}%`;
 }
 
@@ -195,7 +195,7 @@ export function DataTableWithdrawal({
                       <td className={`${TD} text-right text-ink-2`}>{formatCurrency(yearData.targetSpending)}</td>
                       <td className={`${TD} text-right text-ink`}>{formatCurrency(yearData.totalWithdrawal)}</td>
                       <td className={`${TD} text-right`} style={{ color: CHART_COLORS.retirementIncome }}>
-                        {(yearData.governmentBenefitIncome + yearData.incomeStreamIncome) > 0 ? formatCurrency(yearData.governmentBenefitIncome + yearData.incomeStreamIncome) : '-'}
+                        {(yearData.governmentBenefitIncome + yearData.incomeStreamIncome) > 0 ? formatCurrency(yearData.governmentBenefitIncome + yearData.incomeStreamIncome) : '–'}
                       </td>
                       <td className={`${TD} text-right text-ink`}>{formatCurrency(yearData.grossIncome)}</td>
                       <td className={`${TD} text-right text-tax`}>{formatCurrency(yearData.totalTax)}</td>
@@ -246,11 +246,11 @@ export function DataTableWithdrawal({
                     <tr key={yearData.age} className={ROW}>
                       <td className={TD_AGE}>{yearData.age}</td>
                       <td className={`${TD} text-right text-pretax`}>
-                        {yearData.rmdAmount > 0 ? formatCurrency(yearData.rmdAmount) : '-'}
+                        {yearData.rmdAmount > 0 ? formatCurrency(yearData.rmdAmount) : '–'}
                       </td>
                       {accounts.map(acc => (
                         <td key={acc.id} className={`${TD} text-right text-ink-2`}>
-                          {(yearData.withdrawals[acc.id] || 0) > 0 ? formatCurrency(yearData.withdrawals[acc.id] || 0) : '-'}
+                          {(yearData.withdrawals[acc.id] || 0) > 0 ? formatCurrency(yearData.withdrawals[acc.id] || 0) : '–'}
                         </td>
                       ))}
                       <td className={`${TD} text-right text-ink`}>
@@ -343,7 +343,7 @@ export function DataTableWithdrawal({
                                 )}
                               </button>
                             ) : (
-                              '-'
+                              '–'
                             )}
                           </td>
                           <td className={`${TD} text-right text-tax`}>{formatCurrency(yearData.totalTax)}</td>
@@ -439,13 +439,13 @@ export function DataTableWithdrawal({
                         })}
                         {result.yearlyWithdrawals.some(y => y.governmentBenefitIncome > 0) && (
                           <td className={`${TD} text-right text-ink-2`}>
-                            {yearData.governmentBenefitIncome > 0 ? formatCurrency(yearData.governmentBenefitIncome) : '-'}
+                            {yearData.governmentBenefitIncome > 0 ? formatCurrency(yearData.governmentBenefitIncome) : '–'}
                           </td>
                         )}
                         <td className={`${TD} text-right text-ink`}>
                           {(yearData.governmentBenefitIncome + yearData.incomeStreamIncome) > 0
                             ? formatCurrency(yearData.governmentBenefitIncome + yearData.incomeStreamIncome)
-                            : '-'}
+                            : '–'}
                         </td>
                       </tr>
                     );

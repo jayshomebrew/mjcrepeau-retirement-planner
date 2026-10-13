@@ -2,6 +2,8 @@
  * Shared Recharts styling. Every value is a CSS variable from index.css, so
  * charts follow light/dark mode without re-rendering or an isDarkMode prop.
  */
+import { formatAxisCurrency, niceTicks } from '../utils/format';
+
 export const CHART_THEME = {
   grid: 'var(--hair)',
   axis: 'var(--hair-strong)',
@@ -17,6 +19,16 @@ export const AXIS_PROPS = {
   tickLine: false,
   stroke: CHART_THEME.axis,
 };
+
+/**
+ * Spread onto a currency YAxis: a round scale from `niceTicks` with the
+ * compact "$2M" / "$150k" labels, matching the key figures. Pass the largest
+ * stacked total the axis must reach.
+ */
+export function currencyAxisProps(max: number) {
+  const { domain, ticks } = niceTicks(max);
+  return { ...AXIS_PROPS, domain, ticks, tickFormatter: formatAxisCurrency, width: 58 };
+}
 
 /** Spread onto Legend: serif labels on the paper, small round swatches. */
 export const LEGEND_PROPS = {
