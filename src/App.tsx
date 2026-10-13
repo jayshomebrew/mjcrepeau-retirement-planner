@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Account, Profile, Assumptions, IncomeStream } from './types';
 import { DEFAULT_PROFILE, DEFAULT_ASSUMPTIONS, DEFAULT_INCOME_STREAMS } from './utils/constants';
+import { createDefaultAccounts, getCountryDefaultPlan } from './utils/defaultPlan';
 import { STORAGE_KEYS } from './utils/storageKeys';
 import {
   buildScenario,
@@ -36,59 +37,6 @@ import { Modal } from './components/Modal';
 import { useRetained } from './hooks/useRetained';
 import { v4 as uuidv4 } from 'uuid';
 
-// Default accounts for US
-const createUSDefaultAccounts = (): Account[] => [
-  {
-    id: uuidv4(),
-    name: 'Company 401(k)',
-    type: 'traditional_401k',
-    balance: 150000,
-    annualContribution: 15000,
-    contributionGrowthRate: 0.03,
-    returnRate: 0.07,
-    employerMatchPercent: 0.5,
-    employerMatchLimit: 3000,
-  },
-  {
-    id: uuidv4(),
-    name: 'Roth IRA',
-    type: 'roth_ira',
-    balance: 40000,
-    annualContribution: 7000,
-    contributionGrowthRate: 0,
-    returnRate: 0.07,
-  },
-];
-
-// Default accounts for Canada
-const createCADefaultAccounts = (): Account[] => [
-  {
-    id: uuidv4(),
-    name: 'Employer RRSP',
-    type: 'employer_rrsp',
-    balance: 150000,
-    annualContribution: 15000,
-    contributionGrowthRate: 0.03,
-    returnRate: 0.07,
-    employerMatchPercent: 0.5,
-    employerMatchLimit: 3000,
-  },
-  {
-    id: uuidv4(),
-    name: 'TFSA',
-    type: 'tfsa',
-    balance: 40000,
-    annualContribution: 7000,
-    contributionGrowthRate: 0,
-    returnRate: 0.07,
-  },
-];
-
-// Get default accounts based on country
-const createDefaultAccounts = (country: CountryCode = 'US'): Account[] => {
-  return country === 'CA' ? createCADefaultAccounts() : createUSDefaultAccounts();
-};
-
 /**
  * Normalize accounts loaded from localStorage to add withdrawal rules if missing
  * This ensures backwards compatibility with accounts saved before withdrawal rules were added
@@ -117,6 +65,17 @@ function normalizeAccount(
   };
 }
 
+/**
+ * Persist a country's default accounts, profile and income streams. Callers
+ * reload afterwards so every hook and provider re-initializes from storage.
+ */
+function writeCountryDefaultPlan(country: CountryCode): void {
+  const plan = getCountryDefaultPlan(country);
+  localStorage.setItem(STORAGE_KEYS.accounts, JSON.stringify(plan.accounts));
+  localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(plan.profile));
+  localStorage.setItem(STORAGE_KEYS.incomeStreams, JSON.stringify(plan.incomeStreams));
+}
+
 type TabType = 'accumulation' | 'retirement' | 'summary' | 'methodology';
 
 // Inner app component that uses the country context
@@ -125,13 +84,13 @@ function AppContent() {
   const { country, config: countryConfig } = useCountry();
 
   // Load profile first (needed for account normalization)
-  const [profile, setProfile, resetProfile] = useLocalStorage<Profile>(
+  const [profile, setProfile] = useLocalStorage<Profile>(
     'retirement-planner-profile',
     DEFAULT_PROFILE
   );
 
   // Use localStorage for accounts with normalization
-  const [rawAccounts, setRawAccounts, resetAccounts] = useLocalStorage<Account[]>(
+  const [rawAccounts, setRawAccounts] = useLocalStorage<Account[]>(
     'retirement-planner-accounts',
     createDefaultAccounts()
   );
@@ -151,12 +110,12 @@ function AppContent() {
     }
   }, [setRawAccounts, profile]);
 
-  const [assumptions, setAssumptions, resetAssumptions] = useLocalStorage<Assumptions>(
+  const [assumptions, setAssumptions] = useLocalStorage<Assumptions>(
     'retirement-planner-assumptions',
     DEFAULT_ASSUMPTIONS
   );
 
-  const [incomeStreams, setIncomeStreams, resetIncomeStreams] = useLocalStorage<IncomeStream[]>(
+  const [incomeStreams, setIncomeStreams] = useLocalStorage<IncomeStream[]>(
     'retirement-planner-income-streams',
     DEFAULT_INCOME_STREAMS
   );
@@ -258,14 +217,14 @@ function AppContent() {
   }, []);
 
   const confirmReset = useCallback(() => {
-    resetAccounts();
-    resetProfile();
-    resetAssumptions();
-    resetIncomeStreams();
+    // Reset to the CURRENT country's defaults (the hooks' own reset values
+    // are the US defaults). Write storage directly and reload, as country
+    // switching and import do, so every hook re-initializes from it.
+    writeCountryDefaultPlan(country);
+    localStorage.setItem(STORAGE_KEYS.assumptions, JSON.stringify(DEFAULT_ASSUMPTIONS));
     setShowResetConfirm(false);
-    // Force reload to get fresh default accounts with new UUIDs
     window.location.reload();
-  }, [resetAccounts, resetProfile, resetAssumptions, resetIncomeStreams]);
+  }, [country]);
 
   const cancelReset = useCallback(() => {
     setShowResetConfirm(false);
@@ -664,24 +623,9 @@ function AppContent() {
 // Wrapper component that provides the CountryProvider with reset callback
 function App() {
   const handleCountryChange = useCallback((newCountry: CountryCode) => {
-    // Reset to country-specific defaults
-    const countryConfig = getCountryConfig(newCountry);
-    const defaultProfile = countryConfig.getDefaultProfile();
-
-    // Clear localStorage and set new defaults
-    localStorage.setItem(STORAGE_KEYS.accounts, JSON.stringify(createDefaultAccounts(newCountry)));
-    localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify({
-      ...DEFAULT_PROFILE,
-      ...defaultProfile,
-      country: newCountry,
-    }));
-
-    // Reset income streams — default SS for US, empty for Canada
-    localStorage.setItem(STORAGE_KEYS.incomeStreams,
-      JSON.stringify(newCountry === 'US' ? DEFAULT_INCOME_STREAMS : [])
-    );
-
-    // Force reload to reinitialize with new country defaults
+    // Reset accounts, profile and income streams to country-specific
+    // defaults (assumptions carry over), then reload to reinitialize.
+    writeCountryDefaultPlan(newCountry);
     window.location.reload();
   }, []);
 
