@@ -13,7 +13,7 @@ import type { CountryConfig } from '../countries';
  * @param retirementAge - User's planned retirement age
  * @param countryConfig - Country configuration
  * @param birthYear - User's birth year; determines the RMD start age
- *   (US: 73 if born before 1960, 75 otherwise; Canada: 71)
+ *   (US: 73 if born before 1960, 75 otherwise; Canada: 72)
  * @returns Default withdrawal start age
  */
 export function getDefaultWithdrawalAge(

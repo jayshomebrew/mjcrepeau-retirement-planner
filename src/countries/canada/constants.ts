@@ -164,7 +164,11 @@ export const CANADIAN_PROVINCES = [
 
 // RRIF Minimum Withdrawal Percentages (set by ITA regulation; unchanged since 2015)
 export const RRIF_START_AGE = 71; // Must convert RRSP to RRIF by end of year turning 71
+// No minimum is required in the year a RRIF is opened, so with conversion at
+// 71 the first minimum withdrawal falls in the year the holder turns 72.
+export const RRIF_FIRST_MINIMUM_AGE = RRIF_START_AGE + 1;
 
+// Keyed by age on January 1 of the withdrawal year (the CRA convention).
 export interface RRIFEntry {
   age: number;
   minimumPercentage: number;
@@ -214,7 +218,9 @@ export const OAS_START_AGE_DEFAULT = 65;
 export const OAS_DEFERRAL_INCREASE_RATE = 0.006; // 0.6% per month
 export const OAS_CLAWBACK_THRESHOLD = 95323; // 2026 threshold
 export const OAS_CLAWBACK_RATE = 0.15; // 15% recovery tax
-export const OAS_CLAWBACK_ELIMINATION = 154708; // Full elimination threshold (ages 65-74)
+// Full elimination point for a non-deferred pension at ages 65-74 (reference
+// only; the engine derives it from the 15% rate capped at the OAS received).
+export const OAS_CLAWBACK_ELIMINATION = 154708;
 
 // Capital Gains Inclusion Rate
 // The proposed increase to 66.67% for gains over $250k was deferred and

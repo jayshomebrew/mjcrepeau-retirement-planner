@@ -22,15 +22,15 @@ This is a React retirement planning calculator that projects portfolio growth an
 1. **Accumulation Phase** (`src/utils/projections.ts`): Projects account growth from current age to retirement using compound interest, annual contributions, contribution growth rates, and employer matching.
 
 2. **Withdrawal Phase** (`src/utils/withdrawals.ts`): Simulates retirement spending with a tax-optimized withdrawal strategy:
-   - Takes Required Minimum Distributions (RMDs) from traditional accounts first. The start age comes from `getRMDStartAge(birthYear)`: US 73 if born before 1960, 75 otherwise (SECURE 2.0); Canada RRIF minimums from 71. Birth year is estimated from current age (`birthYearFromAge`), so it can be off by one
-   - Fills the tax bracket with additional traditional withdrawals, country-aware: US fills the standard deduction + 12% bracket, Canada fills the federal basic personal amount + first federal bracket
+   - Takes Required Minimum Distributions (RMDs) from traditional accounts first. The start age comes from `getRMDStartAge(birthYear)`: US 73 if born before 1960, 75 otherwise (SECURE 2.0); Canada RRIF minimums from 72 (RRSP-family accounts convert at 71; no minimum is due in the conversion year, so the first minimum is at 72, using the CRA factor for age on January 1, i.e. age − 1). Birth year is estimated from current age (`birthYearFromAge`), so it can be off by one
+   - Fills the tax bracket with additional traditional withdrawals, country-aware: US fills the standard deduction + 12% bracket, Canada fills to the top of the first (14%) federal bracket
    - Uses Roth accounts (tax-free)
    - Uses taxable accounts (with capital gains tracking)
    - Uses HSA last
    - Falls back to additional traditional withdrawals if needed
    - Final fallback: if all available accounts are exhausted, withdraws from accounts before their configured start age, incurring early-withdrawal penalties (10% for US traditional accounts before age 59.5)
 
-3. **Tax Calculations** (`src/countries/{usa,canada}/taxes.ts`, exposed as `CountryConfig.calculateYearlyTaxes`; `src/utils/taxes.ts` is only a legacy US wrapper): computes federal + regional tax including capital gains (US: 2026 brackets with 0%/15%/20% capital gains rates; Canada: 50% capital gains inclusion stacked on ordinary income, plus the Quebec abatement and Ontario surtax). Brackets, deductions, and basic personal amounts are indexed by the assumed inflation rate for future years (via the `indexFactor` parameter and `scaleBrackets` in `src/utils/taxBrackets.ts`), matching how both countries index them in law. CPP and OAS are modeled as 100% taxable; US Social Security taxability follows the provisional-income phase-in (0–85%, `calculateTaxableSocialSecurity`) with statutorily frozen thresholds that are deliberately NOT inflation-indexed. The bracket-fill planning step still estimates benefit income at the flat 85% maximum (the exact amount depends on withdrawals not yet decided at that point). The OAS clawback compares prior-year taxable income (deflated to today's dollars) against the current-year threshold — all clawback math is done in today's dollars.
+3. **Tax Calculations** (`src/countries/{usa,canada}/taxes.ts`, exposed as `CountryConfig.calculateYearlyTaxes`; `src/utils/taxes.ts` is only a legacy US wrapper): computes federal + regional tax including capital gains (US: 2026 brackets with 0%/15%/20% capital gains rates, with any standard deduction unused by ordinary income offsetting gains; Canada: 50% capital gains inclusion stacked on ordinary income, federal and provincial basic personal amounts applied as non-refundable credits at the lowest bracket rate rather than deductions, plus the Quebec abatement and Ontario surtax). Brackets, deductions, and basic personal amounts are indexed by the assumed inflation rate for future years (via the `indexFactor` parameter and `scaleBrackets` in `src/utils/taxBrackets.ts`), matching how both countries index them in law. CPP and OAS are modeled as 100% taxable; US Social Security taxability follows the provisional-income phase-in (0–85%, `calculateTaxableSocialSecurity`) with statutorily frozen thresholds that are deliberately NOT inflation-indexed. The bracket-fill planning step still estimates benefit income at the flat 85% maximum (the exact amount depends on withdrawals not yet decided at that point). The OAS clawback compares prior-year taxable income (deflated to today's dollars) against the current-year threshold — all clawback math is done in today's dollars.
 
 ### Data Flow
 
@@ -52,7 +52,7 @@ This is a React retirement planning calculator that projects portfolio growth an
 **Configurable Withdrawal Ages:**
 - Each account has optional `withdrawalRules: { startAge: number }`
 - Defaults are smart: US accounts with an early-withdrawal penalty default to 60; everything else defaults to retirement age, capped at the RMD/RRIF age for accounts that have one
-- Validation enforces RMD age constraints (can't delay past the RMD age: 73 or 75 US, 71 Canada)
+- Validation enforces RMD age constraints (can't delay past the RMD age: 73 or 75 US, 72 Canada)
 - Early withdrawals trigger 10% penalty for US traditional accounts before age 59.5
 
 **Export (`src/utils/export/`):**
@@ -72,6 +72,10 @@ Everything the engine outputs is nominal (future) dollars. `presentValue`/`infla
 - HSA non-medical penalty (20% before age 65) not implemented. HSA withdrawals are modeled as penalty-free.
 - 5-year rule for Roth accounts not tracked. Account opening dates are not stored.
 - FHSA accounts are modeled as traditional/pretax (assumed transferred to RRSP and taxed on withdrawal).
+
+**Known Simplifications (Tax Credits & Deductions):**
+- US: only the regular standard deduction; the additional 65+ standard deduction and the OBBBA $6,000 senior deduction (2025–2028) are not modeled.
+- Canada: only the basic personal amount credit, at its maximum (high-income phase-down ignored); the age amount and pension income amount credits are not modeled.
 
 **Known Simplifications (Spending & Income):**
 - The spending target is pre-tax; withdrawals are not grossed up to cover taxes.

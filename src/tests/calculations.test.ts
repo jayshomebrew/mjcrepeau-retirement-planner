@@ -21,6 +21,7 @@ import { Account, Profile, Assumptions, IncomeStream } from '../types';
 import { getCountryConfig } from '../countries';
 import { getDefaultWithdrawalAge, getMaxWithdrawalAge } from '../utils/withdrawalDefaults';
 import { OAS_MAX_MONTHLY, OAS_CLAWBACK_THRESHOLD } from '../countries/canada/constants';
+import { calculateOASClawback, calculateCanadianRetirementBenefits } from '../countries/canada/benefits';
 
 // Get US config for tests
 const usConfig = getCountryConfig('US');
@@ -960,6 +961,39 @@ function testCostBasisTracking(): void {
   assert(zeroBasisTax > 10000, `Zero-basis withdrawal is taxed as gains ($${zeroBasisTax.toFixed(0)})`);
   assertApprox(fullBasisTax, 0, 0.01, 'Full-basis withdrawal has no gains and no tax');
 
+  // Exact check: a basis of 0 means 100% gains (not an "unknown" 50%).
+  // Single, $100k withdrawal, all gains: taxable = $100,000 - $16,100 =
+  // $83,900; ($83,900 - $49,450) @ 15% = $5,167.50
+  const singleProfile: Profile = { ...profile, filingStatus: 'single' };
+  const zeroBasisSmall: Account = { ...taxableAccount, balance: 1000000, costBasis: 0 };
+  const zeroBasisSmallResult = calculateWithdrawals(
+    [zeroBasisSmall], singleProfile, { ...assumptions, safeWithdrawalRate: 0.10 },
+    calculateAccumulation([zeroBasisSmall], singleProfile, usConfig), usConfig
+  );
+  assertApprox(zeroBasisSmallResult.yearlyWithdrawals[0].federalTax, 5167.50, 0.01,
+    'Zero basis: entire $100k withdrawal is taxed as gains');
+
+  console.log('\n--- Early-access fallback uses pre-withdrawal gain ratio ---');
+
+  // Taxable account not available until 70, so the whole $100k is drawn in
+  // the step 7 early-access fallback. Basis $20k -> 80% gains = $80k.
+  // Single: taxable = $80,000 - $16,100 = $63,900;
+  // ($63,900 - $49,450) @ 15% = $2,167.50
+  const lockedTaxable: Account = {
+    ...taxableAccount,
+    balance: 100000,
+    costBasis: 20000,
+    withdrawalRules: { startAge: 70 },
+  };
+  const lockedResult = calculateWithdrawals(
+    [lockedTaxable], singleProfile, { ...assumptions, safeWithdrawalRate: 1.0 },
+    calculateAccumulation([lockedTaxable], singleProfile, usConfig), usConfig
+  );
+  assertApprox(lockedResult.yearlyWithdrawals[0].totalWithdrawal, 100000, 0.01,
+    'Locked taxable account fully drawn via early-access fallback');
+  assertApprox(lockedResult.yearlyWithdrawals[0].federalTax, 2167.50, 0.01,
+    'Early-access full drawdown taxes 80% of it as gains (ratio read before balance drops)');
+
   console.log('\n--- Contributions add to basis during accumulation ---');
 
   // $100k start (basis $40k), $10k/yr contribution for 2 years, no growth:
@@ -1317,13 +1351,29 @@ function testTotalFederalTaxIntegration(): void {
 
   console.log('\n--- Only capital gains (no ordinary income) ---');
 
-  // $0 ordinary income, $100k capital gains
-  // Taxable ordinary = $0
-  // Gains start at $0
-  // 0% bracket: $98,900 at 0%
-  // 15% bracket: $1,100 at 15% = $165.00
+  // $0 ordinary income, $100k capital gains (MFJ)
+  // The unused $32,200 standard deduction offsets gains first (IRS Qualified
+  // Dividends and Capital Gain Tax Worksheet, line 1 = taxable income):
+  // taxable income = $100,000 - $32,200 = $67,800, all under the $98,900
+  // 0% threshold -> $0
   const tax3 = calculateTotalFederalTax(0, 100000, 'married_filing_jointly');
-  assertApprox(tax3, 165.00, 0.01, 'Only $100k capital gains, no ordinary income');
+  assertApprox(tax3, 0, 0.01, 'Only $100k capital gains, no ordinary income (std deduction offsets gains)');
+
+  // Single, $0 ordinary, $60k gains: taxable income = $60,000 - $16,100 =
+  // $43,900, all under the $49,450 0% threshold -> $0
+  const tax3b = calculateTotalFederalTax(0, 60000, 'single');
+  assertApprox(tax3b, 0, 0.01, 'Single: $60k gains only, unused std deduction keeps all gains at 0%');
+
+  // Single, $0 ordinary, $100k gains: taxable = $83,900
+  // $49,450 at 0%, $34,450 at 15% = $5,167.50
+  const tax3c = calculateTotalFederalTax(0, 100000, 'single');
+  assertApprox(tax3c, 5167.50, 0.01, 'Single: $100k gains only, gains above 0% threshold at 15%');
+
+  // Single, $10k ordinary (below the $16,100 deduction), $60k gains:
+  // $6,100 of deduction is left for gains -> taxable gains $53,900 from $0
+  // $49,450 at 0%, $4,450 at 15% = $667.50
+  const tax3d = calculateTotalFederalTax(10000, 60000, 'single');
+  assertApprox(tax3d, 667.50, 0.01, 'Single: leftover std deduction after ordinary income offsets gains');
 
   console.log('\n--- Standard deduction covers all ordinary ---');
 
@@ -1354,11 +1404,23 @@ function testCanadianCalculations(): void {
   console.log('\n--- Canadian Federal Tax Brackets ---');
 
   // Canadian federal tax on $50,000 income
-  // Basic personal amount: $16,452
-  // Taxable: $50,000 - $16,452 = $33,548
-  // 14% on first $58,523 = $33,548 * 0.14 = $4,696.72
+  // The basic personal amount ($16,452) is a non-refundable credit at the
+  // lowest rate (14%), not a deduction: credit = $16,452 * 0.14 = $2,303.28
+  // $50,000 * 0.14 = $7,000.00 - $2,303.28 = $4,696.72
+  // (Below the first bracket top both methods agree.)
   const caTax1 = caConfig.calculateYearlyTaxes(50000, 0, caProfile).federalTax;
-  assert(caTax1 > 0 && caTax1 < 10000, `CA federal tax on $50k is reasonable (got $${caTax1.toFixed(2)})`);
+  assertApprox(caTax1, 4696.72, 0.01, 'CA federal tax on $50k');
+
+  // $100,000: $58,523 @ 14% = $8,193.22; $41,477 @ 20.5% = $8,502.79
+  // $16,696.01 - $2,303.28 credit = $14,392.73
+  // (Deducting the BPA from income would wrongly give $13,323.35.)
+  const caTax100k = caConfig.calculateYearlyTaxes(100000, 0, caProfile).federalTax;
+  assertApprox(caTax100k, 14392.73, 0.01, 'CA federal tax on $100k applies BPA as a 14% credit');
+
+  // Credit is non-refundable: $10k income -> $1,400 tax - $2,303.28 -> $0
+  const caTaxLow = caConfig.calculateYearlyTaxes(10000, 0, caProfile);
+  assertApprox(caTaxLow.federalTax, 0, 0.01, 'CA federal BPA credit cannot make tax negative');
+  assertApprox(caTaxLow.regionalTax, 0, 0.01, 'CA provincial BPA credit cannot make tax negative');
 
   // Higher income bracket test
   const caTax2 = caConfig.calculateYearlyTaxes(100000, 0, caProfile).federalTax;
@@ -1377,13 +1439,52 @@ function testCanadianCalculations(): void {
 
   console.log('\n--- Canadian RRIF Minimum Withdrawals ---');
 
-  // RRIF minimums at age 71 = 5.28%
+  // CRA: a minimum is due every year AFTER the year the RRIF is set up,
+  // at the prescribed factor for age at the beginning of the year. With
+  // conversion at 71, nothing is due at 71 and the first minimum is at 72
+  // using the age-71 factor (5.28%).
   const rrifMin71 = caConfig.getMinimumWithdrawal(71, 100000, 'rrif');
-  assertApprox(rrifMin71, 5280, 10, 'RRIF min at 71 = 5.28% of $100k');
+  assertApprox(rrifMin71, 0, 0.01, 'No RRIF minimum in the conversion year (71)');
 
-  // RRIF minimums at age 80 = 6.82%
+  const rrifMin72 = caConfig.getMinimumWithdrawal(72, 100000, 'rrif');
+  assertApprox(rrifMin72, 5280, 0.01, 'RRIF min in year turning 72 = 5.28% (age 71 on Jan 1)');
+
+  // Year turning 80 -> age 79 on Jan 1 -> 6.58%
   const rrifMin80 = caConfig.getMinimumWithdrawal(80, 100000, 'rrif');
-  assertApprox(rrifMin80, 6820, 10, 'RRIF min at 80 = 6.82% of $100k');
+  assertApprox(rrifMin80, 6580, 0.01, 'RRIF min in year turning 80 = 6.58% (age 79 on Jan 1)');
+
+  // Year turning 96 -> age 95 on Jan 1 -> 20%
+  const rrifMin96 = caConfig.getMinimumWithdrawal(96, 100000, 'rrif');
+  assertApprox(rrifMin96, 20000, 0.01, 'RRIF min in year turning 96 = 20% (age 95+ on Jan 1)');
+
+  // Employer RRSP (the default Canadian account) and FHSA (modeled as
+  // transferred to an RRSP) follow the same minimums.
+  const employerRrspMin75 = caConfig.getMinimumWithdrawal(75, 100000, 'employer_rrsp');
+  assertApprox(employerRrspMin75, 5670, 0.01, 'Employer RRSP min in year turning 75 = 5.67%');
+  const fhsaMin75 = caConfig.getMinimumWithdrawal(75, 100000, 'fhsa');
+  assertApprox(fhsaMin75, 5670, 0.01, 'FHSA min in year turning 75 = 5.67%');
+
+  // End to end: an employer RRSP (the default Canadian account) has no
+  // forced minimum in the year turning 71 and one in the year turning 72.
+  const employerRrsp: Account = {
+    id: 'grsp', name: 'Employer RRSP', type: 'employer_rrsp', balance: 500000,
+    annualContribution: 0, contributionGrowthRate: 0, returnRate: 0,
+  };
+  const rrifTimingProfile: Profile = {
+    country: 'CA', currentAge: 71, retirementAge: 71, lifeExpectancy: 73, region: 'ON',
+    socialSecurityBenefit: 0, secondaryBenefitAmount: 0,
+  };
+  const rrifTiming = calculateWithdrawals(
+    [employerRrsp], rrifTimingProfile,
+    { inflationRate: 0, safeWithdrawalRate: 0.01, retirementReturnRate: 0 },
+    calculateAccumulation([employerRrsp], rrifTimingProfile, caConfig), caConfig, []
+  );
+  const timing71 = rrifTiming.yearlyWithdrawals.find(y => y.age === 71);
+  const timing72 = rrifTiming.yearlyWithdrawals.find(y => y.age === 72);
+  assertApprox(timing71?.rmdAmount ?? -1, 0, 0.01, 'Engine: no employer RRSP minimum at 71');
+  const balanceStart72 = timing71?.remainingBalances['grsp'] ?? 0;
+  assertApprox(timing72?.rmdAmount ?? -1, balanceStart72 * 0.0528, 0.01,
+    'Engine: employer RRSP minimum at 72 = 5.28% of start-of-year balance');
 
   // No minimum before 71 for RRSP
   const rrspMin65 = caConfig.getMinimumWithdrawal(65, 100000, 'rrsp');
@@ -1422,8 +1523,9 @@ function testCanadianCalculations(): void {
 
   console.log('\n--- Low Tax Bracket Fill Target ---');
 
-  // CA target = federal basic personal amount ($16,452) + top of first federal bracket ($58,523) = $74,975
-  assertApprox(caConfig.getLowBracketFillTarget(), 74975, 0.01, 'CA bracket-fill target = BPA + first federal bracket');
+  // CA target = top of the first (14%) federal bracket. The BPA is a credit,
+  // so it does not push the bracket boundary out.
+  assertApprox(caConfig.getLowBracketFillTarget(), 58523, 0.01, 'CA bracket-fill target = top of 14% federal bracket');
 
   // US targets: standard deduction + top of 12% bracket
   assertApprox(usConfig.getLowBracketFillTarget('married_filing_jointly'), 133000, 0.01, 'US MFJ bracket-fill target = $32,200 + $100,800');
@@ -1432,21 +1534,20 @@ function testCanadianCalculations(): void {
   console.log('\n--- Canadian Capital Gains Stacking ---');
 
   // Ordinary income $60,000 + capital gains $20,000 (50% inclusion = $10,000 taxable)
-  // Taxable income = $70,000, all within the first federal/provincial brackets (ON)
-  // Federal: ($70,000 - $16,452 BPA) = $53,548, all within the 14% bracket (up to $58,523)
-  //          $53,548 * 0.14 = $7,496.72
-  // Ontario: ($70,000 - $12,989 BPA) = $57,011
-  //          $53,891 @ 5.05% = $2,721.50
-  //          $3,120 @ 9.15% = $285.48
-  //          Total = $3,006.98
+  // Taxable income = $70,000 (ON)
+  // Federal: $58,523 @ 14% = $8,193.22; $11,477 @ 20.5% = $2,352.79
+  //          $10,546.01 - BPA credit ($16,452 * 14% = $2,303.28) = $8,242.73
+  // Ontario: $53,891 @ 5.05% = $2,721.50; $16,109 @ 9.15% = $1,473.97
+  //          $4,195.47 - BPA credit ($12,989 * 5.05% = $655.94) = $3,539.52
   const caGainsTaxes = caConfig.calculateYearlyTaxes(60000, 20000, caProfile);
-  assertApprox(caGainsTaxes.federalTax, 7496.72, 0.01, 'CA federal tax on $60k ordinary + $20k gains (50% inclusion)');
-  assertApprox(caGainsTaxes.regionalTax, 3006.98, 0.01, 'CA Ontario tax on $60k ordinary + $20k gains (50% inclusion)');
+  assertApprox(caGainsTaxes.federalTax, 8242.73, 0.01, 'CA federal tax on $60k ordinary + $20k gains (50% inclusion)');
+  assertApprox(caGainsTaxes.regionalTax, 3539.52, 0.01, 'CA Ontario tax on $60k ordinary + $20k gains (50% inclusion)');
 
   console.log('\n--- OAS Clawback ---');
 
   // High income: large RRIF balance forces big mandatory withdrawals,
-  // pushing net income well above the OAS clawback threshold ($86,912).
+  // pushing net income well above the OAS clawback threshold. Starts at 72,
+  // the first RRIF minimum year (5.28% of $2M = $105,600).
   // The following year's OAS should be reduced (clawed back).
   const highIncomeAccount: Account = {
     id: 'rrif-high',
@@ -1460,9 +1561,9 @@ function testCanadianCalculations(): void {
 
   const highIncomeProfile: Profile = {
     country: 'CA',
-    currentAge: 71,
-    retirementAge: 71,
-    lifeExpectancy: 75,
+    currentAge: 72,
+    retirementAge: 72,
+    lifeExpectancy: 76,
     region: 'ON',
     socialSecurityBenefit: 0,
     socialSecurityStartAge: 65,
@@ -1510,6 +1611,35 @@ function testCanadianCalculations(): void {
 
   const lowIncomeSecondYearBenefit = lowIncomeResult.yearlyWithdrawals[1].governmentBenefitIncome;
   assertApprox(lowIncomeSecondYearBenefit, fullOASAmount, 0.01, 'OAS is untouched for low-income retiree');
+
+  console.log('\n--- OAS clawback formula ---');
+
+  // Recovery tax = 15% of income over the threshold, capped at the OAS
+  // received. A pension deferred to 70 (+36%) is larger, so it is NOT
+  // fully clawed back at the fixed 65-74 elimination point.
+  const deferredOAS = OAS_MAX_MONTHLY * 12 * 1.36; // $12,114.50
+  const excess = 160000 - OAS_CLAWBACK_THRESHOLD;
+  assertApprox(calculateOASClawback(160000, deferredOAS), excess * 0.15, 0.01,
+    'Deferred OAS at $160k: clawback = 15% of excess, not the full pension');
+  assertApprox(calculateOASClawback(250000, deferredOAS), deferredOAS, 0.01,
+    'Clawback is capped at the OAS received');
+  assertApprox(calculateOASClawback(OAS_CLAWBACK_THRESHOLD, deferredOAS), 0, 0.01,
+    'No clawback at the threshold');
+
+  console.log('\n--- OAS amount of 0 means no OAS ---');
+
+  const noOASProfile: Profile = {
+    country: 'CA', currentAge: 70, retirementAge: 65, lifeExpectancy: 90, region: 'ON',
+    socialSecurityBenefit: 0, secondaryBenefitStartAge: 65, secondaryBenefitAmount: 0,
+  };
+  const noOAS = calculateCanadianRetirementBenefits(noOASProfile, 70, 0);
+  assertApprox(noOAS.reduce((sum, b) => sum + b.annualAmount, 0), 0, 0.01,
+    'Entering $0 OAS yields no OAS (not the maximum)');
+  const unsetOAS = calculateCanadianRetirementBenefits(
+    { ...noOASProfile, secondaryBenefitAmount: undefined }, 65, 0
+  );
+  assertApprox(unsetOAS.reduce((sum, b) => sum + b.annualAmount, 0), OAS_MAX_MONTHLY * 12, 0.01,
+    'Unset OAS amount falls back to the maximum');
 
   console.log('\n--- FHSA Drawdown (Stranded Account Regression) ---');
 
@@ -1562,17 +1692,18 @@ function testCanadaProvincialFidelity(): void {
   };
 
   // $150k ordinary income in Ontario:
-  // Taxable after $12,989 BPA = $137,011
-  // Basic ON tax: $53,891 @ 5.05% + $53,894 @ 9.15% + $29,226 @ 11.16% = $10,914.42
-  // Surtax: 20% x ($10,914.42 - $5,818) + 36% x ($10,914.42 - $7,446) = $2,267.92
-  // Total = $13,182.34
+  // Brackets: $53,891 @ 5.05% + $53,894 @ 9.15% + $42,215 @ 11.16% = $12,363.99
+  // Less BPA credit $12,989 @ 5.05% = $655.94 -> basic ON tax $11,708.05
+  // Surtax (on tax after credits): 20% x ($11,708.05 - $5,818)
+  //   + 36% x ($11,708.05 - $7,446) = $1,178.01 + $1,534.34 = $2,712.35
+  // Total = $14,420.40
   const onHigh = caConfig.calculateYearlyTaxes(150000, 0, onProfile);
-  assertApprox(onHigh.regionalTax, 13182.34, 0.5, 'ON provincial tax on $150k includes the surtax');
+  assertApprox(onHigh.regionalTax, 14420.40, 0.5, 'ON provincial tax on $150k includes the surtax');
 
-  // $70k income: basic ON tax (~$3,007) is below the first surtax threshold,
-  // so no surtax applies (regression guard for the existing stacking test).
+  // $70k income: basic ON tax ($3,539.52) is below the first surtax
+  // threshold, so no surtax applies.
   const onLow = caConfig.calculateYearlyTaxes(70000, 0, onProfile);
-  assertApprox(onLow.regionalTax, 3006.98, 0.5, 'ON provincial tax below surtax thresholds is unchanged');
+  assertApprox(onLow.regionalTax, 3539.52, 0.5, 'ON provincial tax below surtax thresholds has no surtax');
 
   console.log('\n--- Quebec federal abatement ---');
 
@@ -1583,14 +1714,14 @@ function testCanadaProvincialFidelity(): void {
 
   console.log('\n--- LIF/LIRA minimum withdrawals ---');
 
-  const lifMin71 = caConfig.getMinimumWithdrawal(71, 100000, 'lif');
-  assertApprox(lifMin71, 5280, 10, 'LIF minimum at 71 = 5.28% of $100k');
+  const lifMin72 = caConfig.getMinimumWithdrawal(72, 100000, 'lif');
+  assertApprox(lifMin72, 5280, 0.01, 'LIF minimum in year turning 72 = 5.28% of $100k');
 
   const liraMin75 = caConfig.getMinimumWithdrawal(75, 100000, 'lira');
-  assertApprox(liraMin75, 5820, 10, 'LIRA minimum at 75 = 5.82% (modeled as converted to LIF)');
+  assertApprox(liraMin75, 5670, 0.01, 'LIRA minimum in year turning 75 = 5.67% (modeled as converted to LIF)');
 
-  const lifMin70 = caConfig.getMinimumWithdrawal(70, 100000, 'lif');
-  assertApprox(lifMin70, 0, 0.01, 'No LIF minimum before age 71');
+  const lifMin71 = caConfig.getMinimumWithdrawal(71, 100000, 'lif');
+  assertApprox(lifMin71, 0, 0.01, 'No LIF minimum in the conversion year (71)');
 
   const tfsaMin = caConfig.getMinimumWithdrawal(75, 100000, 'tfsa');
   assertApprox(tfsaMin, 0, 0.01, 'TFSA has no minimum withdrawal');
@@ -2157,7 +2288,15 @@ function testWithdrawalDefaults(): void {
   assertApprox(defaultAge3, 65, 0.01, 'Canadian RRSP defaults to retirement age');
 
   const maxAge3 = getMaxWithdrawalAge(caRRSPAccount, 90, caConfig, 1990);
-  assertApprox(maxAge3, 71, 0.01, 'Canadian RRSP max age is 71 (RRIF conversion age, any birth year)');
+  assertApprox(maxAge3, 72, 0.01, 'Canadian RRSP max age is 72 (first RRIF minimum year, any birth year)');
+
+  // Employer RRSP and FHSA are subject to the same conversion cap
+  const caEmployerRRSP: Account = { ...caRRSPAccount, id: '4', type: 'employer_rrsp' };
+  assertApprox(getMaxWithdrawalAge(caEmployerRRSP, 90, caConfig, 1990), 72, 0.01,
+    'Canadian employer RRSP max age is 72');
+  const caFHSA: Account = { ...caRRSPAccount, id: '5', type: 'fhsa' };
+  assertApprox(getMaxWithdrawalAge(caFHSA, 90, caConfig, 1990), 72, 0.01,
+    'Canadian FHSA max age is 72');
 }
 
 // =============================================================================
