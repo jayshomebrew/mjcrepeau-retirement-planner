@@ -64,24 +64,8 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
           />
         </div>
 
-        {country === 'US' && (
-          <div>
-            <label className="field-label">
-              Filing status
-            </label>
-            <select
-              value={profile.filingStatus}
-              onChange={(e) => handleChange('filingStatus', e.target.value as FilingStatus)}
-              className="field"
-            >
-              <option value="single">Single</option>
-              <option value="married_filing_jointly">Married filing jointly</option>
-            </select>
-          </div>
-        )}
-
         {country === 'CA' && (
-          <div>
+          <div className="col-span-2">
             <label className="field-label">
               Province
             </label>
@@ -122,6 +106,22 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
               defaultValue={0.05}
               className="field"
             />
+          </div>
+        )}
+
+        {country === 'US' && (
+          <div className="col-span-2">
+            <label className="field-label">
+              Filing status
+            </label>
+            <select
+              value={profile.filingStatus}
+              onChange={(e) => handleChange('filingStatus', e.target.value as FilingStatus)}
+              className="field"
+            >
+              <option value="single">Single</option>
+              <option value="married_filing_jointly">Married filing jointly</option>
+            </select>
           </div>
         )}
       </div>

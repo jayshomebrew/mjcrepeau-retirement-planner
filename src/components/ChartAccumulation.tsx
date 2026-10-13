@@ -103,6 +103,10 @@ export function ChartAccumulation({ accounts, result, animate = true }: ChartAcc
           <Tooltip content={<CustomTooltip accounts={accounts} />} cursor={LINE_CURSOR} />
           <Legend
             {...LEGEND_PROPS}
+            // Series are named by account id, and Recharts sorts legend items
+            // by name by default, which would order them by random UUID.
+            // List them in stacking order instead.
+            itemSorter={item => sortedAccounts.findIndex(a => a.id === item.value)}
             formatter={(value) => {
               const account = accounts.find(a => a.id === value);
               return <span style={{ color: CHART_THEME.legend }}>{account?.name || value}</span>;
