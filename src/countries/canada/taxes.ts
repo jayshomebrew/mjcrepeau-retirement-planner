@@ -31,6 +31,17 @@ function calculateProgressiveTax(income: number, brackets: TaxBracket[]): number
 }
 
 /**
+ * Apply a basic personal amount as a non-refundable credit: the amount is
+ * valued at the lowest bracket rate and reduces tax, but never below zero.
+ * (It is NOT a deduction from income, which would value it at the
+ * taxpayer's marginal rate.)
+ */
+function applyBasicPersonalCredit(tax: number, basicPersonalAmount: number, brackets: TaxBracket[]): number {
+  const credit = basicPersonalAmount * (brackets[0]?.rate ?? 0);
+  return Math.max(0, tax - credit);
+}
+
+/**
  * Calculate federal income tax (Canada).
  *
  * `indexFactor` scales bracket boundaries and the basic personal amount for
@@ -38,8 +49,9 @@ function calculateProgressiveTax(income: number, brackets: TaxBracket[]): number
  * 1 = current year.
  */
 export function calculateFederalIncomeTax(income: number, indexFactor: number = 1): number {
-  const taxableIncome = Math.max(0, income - FEDERAL_BASIC_PERSONAL_AMOUNT * indexFactor);
-  return calculateProgressiveTax(taxableIncome, scaleBrackets(FEDERAL_TAX_BRACKETS, indexFactor));
+  const brackets = scaleBrackets(FEDERAL_TAX_BRACKETS, indexFactor);
+  const tax = calculateProgressiveTax(income, brackets);
+  return applyBasicPersonalCredit(tax, FEDERAL_BASIC_PERSONAL_AMOUNT * indexFactor, brackets);
 }
 
 /**
@@ -58,12 +70,17 @@ export function calculateProvincialIncomeTax(
     return 0;
   }
 
-  const taxableIncome = Math.max(0, income - basicPersonalAmount * indexFactor);
-  const basicTax = calculateProgressiveTax(taxableIncome, scaleBrackets(brackets, indexFactor));
+  const scaledBrackets = scaleBrackets(brackets, indexFactor);
+  const basicTax = applyBasicPersonalCredit(
+    calculateProgressiveTax(income, scaledBrackets),
+    basicPersonalAmount * indexFactor,
+    scaledBrackets
+  );
 
-  // Ontario levies a surtax on basic provincial tax itself; without it the
-  // bracket rates alone substantially understate ON tax at higher incomes.
-  // Its thresholds are indexed annually, so scale them like the brackets.
+  // Ontario levies a surtax on basic provincial tax (after non-refundable
+  // credits); without it the bracket rates alone substantially understate
+  // ON tax at higher incomes. Its thresholds are indexed annually, so scale
+  // them like the brackets.
   if (provinceCode === 'ON') {
     const t1 = ONTARIO_SURTAX.threshold1 * indexFactor;
     const t2 = ONTARIO_SURTAX.threshold2 * indexFactor;
@@ -83,12 +100,13 @@ export function getMarginalTaxRate(income: number, provinceCode: string): number
   const federalBrackets = FEDERAL_TAX_BRACKETS;
   const provincialBrackets = PROVINCIAL_TAX_BRACKETS[provinceCode] || [];
 
-  const taxableIncome = Math.max(0, income - FEDERAL_BASIC_PERSONAL_AMOUNT);
+  // The basic personal amounts are credits, so they don't shift the
+  // brackets: the marginal rate is read straight off income.
 
   // Find federal marginal rate
   let federalRate = 0;
   for (const bracket of federalBrackets) {
-    if (taxableIncome <= bracket.max) {
+    if (income <= bracket.max) {
       federalRate = bracket.rate;
       break;
     }
@@ -98,12 +116,9 @@ export function getMarginalTaxRate(income: number, provinceCode: string): number
   }
 
   // Find provincial marginal rate
-  const provincialBasic = PROVINCIAL_BASIC_PERSONAL_AMOUNTS[provinceCode] || 0;
-  const provincialTaxableIncome = Math.max(0, income - provincialBasic);
-
   let provincialRate = 0;
   for (const bracket of provincialBrackets) {
-    if (provincialTaxableIncome <= bracket.max) {
+    if (income <= bracket.max) {
       provincialRate = bracket.rate;
       break;
     }

@@ -28,6 +28,17 @@ interface AccountState {
 }
 
 /**
+ * Fraction of a taxable-account withdrawal that is realized gain, from the
+ * account's current (pre-withdrawal) balance and basis. A basis of 0 means
+ * the whole balance is gain. (An unknown basis never reaches here: an
+ * unset Account.costBasis is resolved to the full balance at initialization.)
+ */
+function taxableGainRatio(acc: AccountState): number {
+  if (acc.balance <= 0) return 0;
+  return Math.min(1, Math.max(0, 1 - acc.costBasis / acc.balance));
+}
+
+/**
  * Calculate Required Minimum Distribution for traditional accounts
  * Uses country-specific logic if CountryConfig provided
  */
@@ -537,8 +548,7 @@ function performTaxOptimizedWithdrawal(
     const withdrawal = Math.min(remainingNeed, acc.balance);
 
     // Calculate gains portion (simplified: proportional to balance vs cost basis)
-    const gainRatio = acc.costBasis > 0 ? Math.max(0, 1 - acc.costBasis / acc.balance) : 0.5;
-    const gains = withdrawal * gainRatio;
+    const gains = withdrawal * taxableGainRatio(acc);
 
     acc.balance -= withdrawal;
     // Reduce cost basis proportionally
@@ -637,6 +647,8 @@ function performTaxOptimizedWithdrawal(
     for (const acc of unavailableOthers) {
       if (remainingNeed <= 0) break;
       const withdrawal = Math.min(remainingNeed, acc.balance);
+      // Gain ratio must be read from the pre-withdrawal balance, as in step 4
+      const gainRatio = taxableGainRatio(acc);
       acc.balance -= withdrawal;
       result.byAccount[acc.id] += withdrawal;
 
@@ -645,7 +657,6 @@ function performTaxOptimizedWithdrawal(
         result.rothWithdrawal += withdrawal;
       } else if (treatment === 'taxable') {
         result.taxableWithdrawal += withdrawal;
-        const gainRatio = acc.costBasis > 0 ? Math.max(0, 1 - acc.costBasis / acc.balance) : 0.5;
         result.taxableGains += withdrawal * gainRatio;
         if (acc.balance > 0) {
           acc.costBasis *= (acc.balance / (acc.balance + withdrawal));

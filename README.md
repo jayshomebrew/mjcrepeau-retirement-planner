@@ -23,7 +23,7 @@ The calculator supports retirement planning for both **United States** and **Can
 - **Account Types**: RRSP, TFSA, RRIF, LIRA, LIF, FHSA, Non-registered, Employer RRSP
 - **Tax System**: Federal tax brackets, provincial tax rates by region
 - **Benefits**: CPP (Canada Pension Plan) and OAS (Old Age Security)
-- **RRIF Minimums**: Mandatory withdrawals starting at age 71
+- **RRIF Minimums**: Mandatory withdrawals starting at age 72 (the year after RRSP-to-RRIF conversion at 71)
 
 Switching countries asks for confirmation, then resets accounts, profile, and income streams to that country's defaults. Economic assumptions are kept.
 
@@ -54,7 +54,7 @@ Model multiple sources of retirement income beyond portfolio withdrawals:
 
 ### Tax-Optimized Withdrawals
 The withdrawal algorithm follows a tax-efficient strategy:
-1. **Required Minimum Distributions (RMDs)**: Mandatory withdrawals from traditional accounts starting at age 73 or 75 depending on birth year (RRIF minimums from 71 in Canada)
+1. **Required Minimum Distributions (RMDs)**: Mandatory withdrawals from traditional accounts starting at age 73 or 75 depending on birth year (RRIF minimums from 72 in Canada)
 2. **Account Availability**: Respects configured withdrawal start ages (e.g., delaying IRA withdrawals until age 60)
 3. **Early Withdrawal Penalties**: Calculates 10% penalty for US traditional account withdrawals before age 59.5
 4. **Tax Bracket Optimization**: Fill lower tax brackets with traditional withdrawals
@@ -278,7 +278,7 @@ For each year until retirement:
 
 ### Withdrawal Phase
 For each year of retirement:
-1. Calculate Required Minimum Distribution (from age 73 or 75 by birth year; RRIF minimums from 71)
+1. Calculate Required Minimum Distribution (from age 73 or 75 by birth year; RRIF minimums from 72)
 2. Determine target spending (safe withdrawal rate + inflation)
 3. Subtract income streams and government benefits from spending need
 4. Withdraw from accounts in tax-optimized order

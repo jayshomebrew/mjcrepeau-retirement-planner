@@ -7,10 +7,9 @@ import {
   CANADIAN_PROVINCES,
   CPP_MAX_MONTHLY,
   OAS_MAX_MONTHLY,
-  FEDERAL_BASIC_PERSONAL_AMOUNT,
   FEDERAL_TAX_BRACKETS,
   CAPITAL_GAINS_INCLUSION_RATE_DEFAULT,
-  RRIF_START_AGE,
+  RRIF_FIRST_MINIMUM_AGE,
   QUEBEC_ABATEMENT_RATE,
 } from './constants';
 import { CHART_COLORS } from '../../utils/constants';
@@ -154,8 +153,10 @@ export const CAConfig: CountryConfig = {
   },
 
   getLowBracketFillTarget: (): number => {
-    // Federal basic personal amount + top of the first federal tax bracket
-    return FEDERAL_BASIC_PERSONAL_AMOUNT + FEDERAL_TAX_BRACKETS[0].max;
+    // Top of the first federal tax bracket. The basic personal amount is a
+    // non-refundable credit, not a deduction, so it does not extend the
+    // bracket: income up to this point is taxed at the lowest federal rate.
+    return FEDERAL_TAX_BRACKETS[0].max;
   },
 
   getRegions: (): Region[] => {
@@ -170,8 +171,9 @@ export const CAConfig: CountryConfig = {
     return calculateRRIFMinimum(age, balance, accountType);
   },
 
-  // RRIF conversion age does not depend on birth year in Canada.
-  getRMDStartAge: (_birthYear: number) => RRIF_START_AGE,
+  // First RRIF minimum year (conversion at 71, first minimum the year after).
+  // Does not depend on birth year in Canada.
+  getRMDStartAge: (_birthYear: number) => RRIF_FIRST_MINIMUM_AGE,
 
   getDefaultProfile: () => ({
     country: 'CA' as const,

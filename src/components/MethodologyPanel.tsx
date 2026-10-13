@@ -21,6 +21,7 @@ import {
   PROVINCIAL_BASIC_PERSONAL_AMOUNTS,
   RRIF_MINIMUM_TABLE,
   RRIF_START_AGE,
+  RRIF_FIRST_MINIMUM_AGE,
   CPP_MAX_MONTHLY,
   OAS_MAX_MONTHLY,
   OAS_CLAWBACK_THRESHOLD,
@@ -199,8 +200,10 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
   const provinceName = CANADIAN_PROVINCES.find(p => p.code === province)?.name || province;
   const provincialBrackets = PROVINCIAL_TAX_BRACKETS[province] || PROVINCIAL_TAX_BRACKETS['ON'];
   const provincialBasicAmount = PROVINCIAL_BASIC_PERSONAL_AMOUNTS[province] || PROVINCIAL_BASIC_PERSONAL_AMOUNTS['ON'];
-  // Low-bracket fill target: basic personal amount + top of the first federal bracket
-  const caBracketFillTarget = CA_BASIC_PERSONAL + CA_FEDERAL_BRACKETS[0].max;
+  // Low-bracket fill target: top of the first federal bracket (the basic
+  // personal amount is a credit, so it does not extend the bracket)
+  const caBracketFillTarget = CA_FEDERAL_BRACKETS[0].max;
+  const caLowestFederalRate = CA_FEDERAL_BRACKETS[0].rate;
 
   const filingStatusLabel = isMarried ? 'married filing jointly' : 'single';
 
@@ -310,14 +313,14 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
           // Canadian withdrawal strategy
           <ol className="mt-5 space-y-4">
             <Step n={1} tone="pretax" title="RRIF minimum withdrawals">
-              Starting at age {RRIF_START_AGE}, RRIF accounts must take minimum withdrawals based on CRA tables.
+              Starting at age {RRIF_FIRST_MINIMUM_AGE} (the year after the RRSP converts to a RRIF at {RRIF_START_AGE}),
+              registered retirement accounts must take minimum withdrawals based on CRA tables.
             </Step>
             <Step n={2} tone="pretax" title="Additional RRSP/RRIF withdrawals">
               Additional withdrawals from registered accounts (RRSP, RRIF, LIRA, LIF, FHSA) to fill the first federal
-              tax bracket (up to {formatCurrency(caBracketFillTarget, currency)} total ordinary income, combining the{' '}
-              {formatCurrency(CA_BASIC_PERSONAL, currency)} basic personal amount and the{' '}
-              {formatCurrency(CA_FEDERAL_BRACKETS[0].max, currency)} top of the{' '}
-              {formatPercent(CA_FEDERAL_BRACKETS[0].rate)} bracket).
+              tax bracket (up to {formatCurrency(caBracketFillTarget, currency)} total ordinary income, the top of the{' '}
+              {formatPercent(caLowestFederalRate)} bracket). The basic personal amount is a tax credit rather than a
+              deduction, so it does not extend the bracket.
             </Step>
             <Step n={3} tone="roth" title="TFSA accounts">
               Tax-free withdrawals for remaining spending needs.
@@ -382,11 +385,13 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
             {isCanada ? (
               <>
                 <Formula>
-                  Taxable income = RRSP/RRIF withdrawals + CPP + OAS + taxable capital gains − basic personal amount
+                  Federal tax = brackets(RRSP/RRIF withdrawals + CPP + OAS + taxable capital gains) − basic personal
+                  amount × {formatPercent(caLowestFederalRate)}
                 </Formula>
                 <p className="mt-2.5">
-                  CPP and OAS are 100% taxable. Progressive federal brackets applied. Basic personal amount is{' '}
-                  {formatCurrency(CA_BASIC_PERSONAL, currency)}.
+                  CPP and OAS are 100% taxable. Progressive federal brackets are applied to taxable income, then the{' '}
+                  {formatCurrency(CA_BASIC_PERSONAL, currency)} basic personal amount is applied as a non-refundable
+                  credit at the lowest rate (worth {formatCurrency(CA_BASIC_PERSONAL * caLowestFederalRate, currency)}).
                 </p>
               </>
             ) : (
@@ -416,7 +421,10 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
             ) : (
               <>
                 <Formula>Taxable gains = withdrawal × (1 − cost basis / balance)</Formula>
-                <p className="mt-2.5">Long-term capital gains rates applied; brackets determined by total income.</p>
+                <p className="mt-2.5">
+                  Long-term capital gains rates applied; brackets determined by total income. Gains stack on top of
+                  ordinary income, and any standard deduction not used up by ordinary income offsets gains first.
+                </p>
               </>
             )}
           </Subsection>
@@ -424,10 +432,12 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
           <Subsection title={isCanada ? 'Provincial tax' : 'State tax (simplified)'}>
             {isCanada ? (
               <>
-                <Formula>Provincial tax = (taxable income − provincial basic amount) × provincial rate</Formula>
+                <Formula>
+                  Provincial tax = provincial brackets(taxable income) − provincial basic amount × lowest provincial rate
+                </Formula>
                 <p className="mt-2.5">
-                  {provinceName} has a basic personal amount of {formatCurrency(provincialBasicAmount, currency)}.
-                  Provincial brackets vary by province.
+                  {provinceName} has a basic personal amount of {formatCurrency(provincialBasicAmount, currency)},
+                  applied as a non-refundable credit at the lowest provincial rate. Provincial brackets vary by province.
                 </p>
               </>
             ) : (
@@ -461,7 +471,7 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
         </BooktabsTable>
         <TableNote>
           {isCanada
-            ? `Basic personal amount of ${formatCurrency(CA_BASIC_PERSONAL, currency)} is a non-refundable tax credit.`
+            ? `Basic personal amount of ${formatCurrency(CA_BASIC_PERSONAL, currency)} is a non-refundable tax credit at the ${formatPercent(caLowestFederalRate)} lowest rate (worth ${formatCurrency(CA_BASIC_PERSONAL * caLowestFederalRate, currency)}); it reduces tax rather than taxable income.`
             : `Standard deduction of ${formatCurrency(standardDeduction)} is subtracted before applying brackets.`}
         </TableNote>
       </Section>
@@ -502,8 +512,9 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
             <>
               <Formula>Minimum withdrawal = RRIF balance × minimum percentage</Formula>
               <p className="mt-2.5">
-                RRIF minimums begin at age {RRIF_START_AGE}. You must convert your RRSP to a RRIF by the end of the
-                year you turn 71.
+                You must convert your RRSP to a RRIF by the end of the year you turn {RRIF_START_AGE}. No minimum is
+                required in the year a RRIF is opened, so minimums begin in the year you turn {RRIF_FIRST_MINIMUM_AGE}.
+                Each year's percentage is set by your age on January 1.
               </p>
             </>
           ) : (
@@ -520,7 +531,7 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
         <div className="mt-6">
           <BooktabsTable
             columns={[
-              { label: 'Age' },
+              { label: isCanada ? 'Age on Jan 1' : 'Age' },
               { label: isCanada ? 'Minimum %' : 'Divisor', align: 'right' },
               { label: '% of balance', align: 'right' },
             ]}
@@ -628,9 +639,15 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
                 $900/year) is not.
               </li>
               <li>
-                LIRA/LIF accounts follow RRIF minimum withdrawals from age 71; LIF withdrawal maximums are not modeled.
+                RRSP, employer RRSP, FHSA, and LIRA/LIF balances follow RRIF minimum withdrawals from age{' '}
+                {RRIF_FIRST_MINIMUM_AGE}; LIF withdrawal maximums are not modeled.
               </li>
               <li>TFSA withdrawals are completely tax-free.</li>
+              <li>
+                Only the basic personal amount credit is modeled, at its maximum (its phase-down at high incomes is
+                ignored). The age amount and pension income amount credits are not modeled, so tax for retirees 65+ is
+                somewhat overstated.
+              </li>
               <li>
                 FHSA balances are modeled as transferring to an RRSP if unused, and are treated as fully taxable on
                 withdrawal like other registered accounts.
@@ -644,6 +661,10 @@ export function MethodologyPanel({ profile, assumptions }: MethodologyPanelProps
               </li>
               <li>State tax uses a simplified flat rate; actual state taxes vary significantly.</li>
               <li>HSA withdrawals are treated as tax-free, assuming qualified medical expenses.</li>
+              <li>
+                Only the regular standard deduction is modeled. The additional standard deduction for age 65+ and the
+                temporary $6,000 senior deduction (2025–2028) are not, so tax for retirees 65+ is somewhat overstated.
+              </li>
             </>
           )}
           <li>
