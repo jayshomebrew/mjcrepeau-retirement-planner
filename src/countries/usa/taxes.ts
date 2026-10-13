@@ -59,7 +59,13 @@ export function calculateFederalIncomeTax(
 }
 
 /**
- * Calculate capital gains tax
+ * Calculate capital gains tax.
+ *
+ * `otherTaxableIncome` is gross ordinary income (before the standard
+ * deduction). Mirrors the IRS Qualified Dividends and Capital Gain Tax
+ * Worksheet: the deduction comes off total income, so any part of it not
+ * used up by ordinary income shelters capital gains too. Gains then stack on
+ * top of taxable ordinary income.
  */
 export function calculateCapitalGainsTax(
   capitalGains: number,
@@ -73,9 +79,10 @@ export function calculateCapitalGainsTax(
   const standardDeduction = getStandardDeduction(filingStatus) * indexFactor;
 
   const incomeBase = Math.max(0, otherTaxableIncome - standardDeduction);
+  const unusedDeduction = Math.max(0, standardDeduction - otherTaxableIncome);
 
   let tax = 0;
-  let remainingGains = capitalGains;
+  let remainingGains = Math.max(0, capitalGains - unusedDeduction);
   let currentIncome = incomeBase;
 
   for (const bracket of brackets) {

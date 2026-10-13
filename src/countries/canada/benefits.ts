@@ -10,7 +10,6 @@ import {
   OAS_DEFERRAL_INCREASE_RATE,
   OAS_CLAWBACK_THRESHOLD,
   OAS_CLAWBACK_RATE,
-  OAS_CLAWBACK_ELIMINATION,
 } from './constants';
 
 /**
@@ -76,8 +75,11 @@ export function calculateOASAdjustment(
  */
 export function calculateOASClawback(netIncome: number, oasAmount: number): number {
   if (netIncome <= OAS_CLAWBACK_THRESHOLD) return 0;
-  if (netIncome >= OAS_CLAWBACK_ELIMINATION) return oasAmount;
 
+  // 15% of the excess, capped at the OAS actually received. The point of
+  // full elimination is not a fixed income: it depends on the pension size
+  // (larger for deferred OAS, and for the 75+ increase), so it falls out of
+  // this cap rather than being tested directly.
   const excessIncome = netIncome - OAS_CLAWBACK_THRESHOLD;
   const clawback = excessIncome * OAS_CLAWBACK_RATE;
 
@@ -121,7 +123,9 @@ export function calculateCanadianRetirementBenefits(
   // OAS Calculation
   // Using secondaryBenefitStartAge and secondaryBenefitAmount for OAS
   const oasStartAge = profile.secondaryBenefitStartAge || OAS_START_AGE_DEFAULT;
-  const oasBaseMonthly = profile.secondaryBenefitAmount
+  // Only an unset amount falls back to the maximum; an explicit 0 (e.g. not
+  // eligible for OAS) means no OAS.
+  const oasBaseMonthly = profile.secondaryBenefitAmount !== undefined
     ? profile.secondaryBenefitAmount / 12
     : OAS_MAX_MONTHLY;
 
