@@ -26,6 +26,7 @@ import {
 } from '../utils/export/scenario';
 import type { ExportTable } from '../utils/export/types';
 import { formatCompactCurrency } from '../utils/format';
+import { getCountryDefaultPlan } from '../utils/defaultPlan';
 
 // Test utilities
 let passedTests = 0;
@@ -755,6 +756,37 @@ function testScenarioCountrySwitch(): void {
 }
 
 // =============================================================================
+// DEFAULT PLAN (country switch and reset)
+// =============================================================================
+
+function testCountryDefaultPlan(): void {
+  section('COUNTRY DEFAULT PLAN');
+
+  // "Reset all data" and country switching share this plan. Reset used to
+  // restore the US defaults even in Canada mode (a 401(k) and Social
+  // Security in a Canadian plan).
+  const ca = getCountryDefaultPlan('CA');
+  assertEqual(ca.profile.country, 'CA', 'CA plan profile is Canadian');
+  assertEqual(ca.profile.region, 'ON', 'CA plan defaults to Ontario');
+  assertEqual(ca.accounts.map(a => a.type).join(','), 'employer_rrsp,tfsa', 'CA plan has Employer RRSP + TFSA');
+  assertEqual(ca.incomeStreams.length, 0, 'CA plan has no income streams (CPP/OAS live on the profile)');
+  assert((ca.profile.secondaryBenefitAmount ?? 0) > 0, 'CA plan sets an OAS amount');
+
+  const us = getCountryDefaultPlan('US');
+  assertEqual(us.profile.country, 'US', 'US plan profile is American');
+  assertEqual(us.accounts.map(a => a.type).join(','), 'traditional_401k,roth_ira', 'US plan has 401(k) + Roth IRA');
+  assertEqual(
+    us.incomeStreams.map(stream => stream.taxTreatment).join(','),
+    'social_security',
+    'US plan has a Social Security stream'
+  );
+
+  // Every call yields fresh account ids, so a reset never reuses old ones
+  const again = getCountryDefaultPlan('CA');
+  assert(again.accounts.every((a, i) => a.id !== ca.accounts[i].id), 'Each plan gets fresh account ids');
+}
+
+// =============================================================================
 // RUN
 // =============================================================================
 
@@ -788,6 +820,7 @@ function runAllTests(): void {
   testScenarioDropsUnknownFields();
   testScenarioValidation();
   testScenarioCountrySwitch();
+  testCountryDefaultPlan();
   testCompactCurrency();
 
   console.log('\n' + '='.repeat(60));
