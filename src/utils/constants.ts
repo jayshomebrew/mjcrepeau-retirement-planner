@@ -18,19 +18,22 @@ export {
   getRMDStartAge,
 } from '../countries/usa/constants';
 
-// Chart colors
+// Chart colors. Each is a CSS variable defined in index.css with separate
+// light and dark values, so SVG fills and inline styles follow the theme
+// without components needing to know which mode is active.
 export const CHART_COLORS = {
-  pretax: '#3b82f6', // blue
-  roth: '#10b981', // green
-  taxable: '#f59e0b', // amber
-  hsa: '#8b5cf6', // purple
-  tax: '#ef4444', // red
-  socialSecurity: '#6366f1', // indigo
-  spending: '#0d9488', // teal
-  pension: '#ec4899',          // pink
-  otherIncome: '#f97316',      // orange
-  taxFreeIncome: '#06b6d4',    // cyan
-  retirementIncome: '#0ea5e9', // sky
+  pretax: 'var(--pretax)',
+  roth: 'var(--roth)',
+  taxable: 'var(--taxable)',
+  hsa: 'var(--hsa)',
+  locked: 'var(--locked)',
+  tax: 'var(--tax)',
+  socialSecurity: 'var(--social)',
+  spending: 'var(--spending)',
+  pension: 'var(--pension)',
+  otherIncome: 'var(--other-income)',
+  taxFreeIncome: 'var(--tax-free)',
+  retirementIncome: 'var(--retirement-income)',
 };
 
 // Default values for new app state

@@ -85,14 +85,14 @@ const CANADA_ACCOUNT_GROUPS: AccountGroup[] = [
   {
     id: 'lira_lif',
     label: 'LIRA/LIF',
-    color: '#6366f1', // indigo - different from RRSP
+    color: CHART_COLORS.locked,
     accountTypes: ['lira', 'lif'],
     description: 'Locked-in retirement accounts (from pension transfers)',
   },
   {
     id: 'fhsa',
     label: 'FHSA',
-    color: '#8b5cf6', // purple
+    color: CHART_COLORS.hsa,
     accountTypes: ['fhsa'],
     description: 'First Home Savings Account',
   },

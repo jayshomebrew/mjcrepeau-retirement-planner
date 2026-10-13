@@ -14,6 +14,9 @@ interface NumberInputProps {
   decimals?: number;
   /** Default value when input is empty or invalid */
   defaultValue?: number;
+  /** Marks the field as failing validation (red outline, aria-invalid). */
+  invalid?: boolean;
+  id?: string;
 }
 
 export function NumberInput({
@@ -27,16 +30,28 @@ export function NumberInput({
   isPercentage = false,
   decimals = 0,
   defaultValue = 0,
+  invalid = false,
+  id,
 }: NumberInputProps) {
-  // Convert the actual value to display value
+  // The resting display: grouped thousands ("150,000") so large balances
+  // read at a glance. While the field is focused the raw digits are shown,
+  // so typing and selecting aren't fighting the separators.
   const toDisplayValue = useCallback((val: number): string => {
+    const displayVal = isPercentage ? val * 100 : val;
+    return displayVal.toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  }, [isPercentage, decimals]);
+
+  const toEditValue = useCallback((val: number): string => {
     const displayVal = isPercentage ? val * 100 : val;
     return decimals > 0 ? displayVal.toFixed(decimals) : String(Math.round(displayVal));
   }, [isPercentage, decimals]);
 
-  // Convert display value back to actual value
+  // Convert display value back to actual value (separators are ignored).
   const toActualValue = useCallback((displayVal: string): number => {
-    const parsed = parseFloat(displayVal);
+    const parsed = parseFloat(displayVal.replace(/[^0-9.-]/g, ''));
     if (isNaN(parsed)) return defaultValue;
     return isPercentage ? parsed / 100 : parsed;
   }, [isPercentage, defaultValue]);
@@ -52,6 +67,10 @@ export function NumberInput({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Allow any input while typing (including empty, partial numbers, etc.)
     setLocalValue(e.target.value);
+  };
+
+  const handleFocus = () => {
+    setLocalValue(toEditValue(toActualValue(localValue)));
   };
 
   const handleBlur = () => {
@@ -88,10 +107,13 @@ export function NumberInput({
 
   return (
     <input
+      id={id}
       type="text"
       inputMode="decimal"
+      aria-invalid={invalid || undefined}
       value={localValue}
       onChange={handleChange}
+      onFocus={handleFocus}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       placeholder={placeholder}

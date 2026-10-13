@@ -8,7 +8,6 @@ interface ProfileFormProps {
   onChange: (profile: Profile) => void;
 }
 
-const inputClassName = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white";
 
 export function ProfileForm({ profile, onChange }: ProfileFormProps) {
   const { country } = useCountry();
@@ -21,13 +20,11 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 pb-2">Personal Information</h3>
-
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-3.5">
+      <div className="grid grid-cols-2 gap-3 items-end">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Current Age
+          <label className="field-label">
+            Current age
           </label>
           <NumberInput
             value={profile.currentAge}
@@ -35,13 +32,13 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
             min={18}
             max={100}
             defaultValue={35}
-            className={inputClassName}
+            className="field"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Retirement Age
+          <label className="field-label">
+            Retirement age
           </label>
           <NumberInput
             value={profile.retirementAge}
@@ -49,13 +46,13 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
             min={18}
             max={100}
             defaultValue={65}
-            className={inputClassName}
+            className="field"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Life Expectancy
+          <label className="field-label">
+            Life expectancy
           </label>
           <NumberInput
             value={profile.lifeExpectancy}
@@ -63,35 +60,19 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
             min={18}
             max={120}
             defaultValue={90}
-            className={inputClassName}
+            className="field"
           />
         </div>
 
-        {country === 'US' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Filing Status
-            </label>
-            <select
-              value={profile.filingStatus}
-              onChange={(e) => handleChange('filingStatus', e.target.value as FilingStatus)}
-              className={inputClassName}
-            >
-              <option value="single">Single</option>
-              <option value="married_filing_jointly">Married Filing Jointly</option>
-            </select>
-          </div>
-        )}
-
         {country === 'CA' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="col-span-2">
+            <label className="field-label">
               Province
             </label>
             <select
               value={profile.region || 'ON'}
               onChange={(e) => handleChange('region', e.target.value)}
-              className={inputClassName}
+              className="field"
             >
               <option value="AB">Alberta</option>
               <option value="BC">British Columbia</option>
@@ -112,8 +93,8 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
 
         {country === 'US' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              State Tax Rate (%)
+            <label className="field-label">
+              State tax rate (%)
             </label>
             <NumberInput
               value={profile.stateTaxRate || 0}
@@ -123,22 +104,38 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
               isPercentage
               decimals={1}
               defaultValue={0.05}
-              className={inputClassName}
+              className="field"
             />
+          </div>
+        )}
+
+        {country === 'US' && (
+          <div className="col-span-2">
+            <label className="field-label">
+              Filing status
+            </label>
+            <select
+              value={profile.filingStatus}
+              onChange={(e) => handleChange('filingStatus', e.target.value as FilingStatus)}
+              className="field"
+            >
+              <option value="single">Single</option>
+              <option value="married_filing_jointly">Married filing jointly</option>
+            </select>
           </div>
         )}
       </div>
 
       {country === 'CA' && (
         <>
-          <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mt-6 mb-3">
-            CPP (Canada Pension Plan)
+          <h4 className="text-[13px] font-semibold text-ink pt-3.5 border-t border-hair">
+            Canada Pension Plan (CPP)
           </h4>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 items-end">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Annual Benefit at Age 65 (today's $)
+              <label className="field-label">
+                Annual benefit at 65 (today's $)
                 <Tooltip text="Your estimated annual CPP benefit at age 65, in today's dollars. If you start CPP earlier or later, this amount is automatically adjusted (−0.6%/month before 65, +0.7%/month after)." />
               </label>
               <NumberInput
@@ -147,13 +144,13 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
                 min={0}
                 placeholder="0"
                 defaultValue={0}
-                className={inputClassName}
+                className="field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Start Age
+              <label className="field-label">
+                Start age
               </label>
               <NumberInput
                 value={profile.socialSecurityStartAge || 65}
@@ -161,7 +158,7 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
                 min={60}
                 max={70}
                 defaultValue={65}
-                className={inputClassName}
+                className="field"
               />
             </div>
           </div>
@@ -171,14 +168,14 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
       {/* OAS Section - Canada Only */}
       {country === 'CA' && (
         <>
-          <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mt-6 mb-3">
-            OAS (Old Age Security)
+          <h4 className="text-[13px] font-semibold text-ink pt-3.5 border-t border-hair">
+            Old Age Security (OAS)
           </h4>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 items-end">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Annual Benefit (today's $)
+              <label className="field-label">
+                Annual benefit (today's $)
                 <Tooltip text="Your estimated annual OAS benefit in today's dollars. Max is ~$8,900/year in 2026." />
               </label>
               <NumberInput
@@ -187,13 +184,13 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
                 min={0}
                 placeholder="0"
                 defaultValue={0}
-                className={inputClassName}
+                className="field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Start Age
+              <label className="field-label">
+                Start age
               </label>
               <NumberInput
                 value={profile.secondaryBenefitStartAge || 65}
@@ -201,7 +198,7 @@ export function ProfileForm({ profile, onChange }: ProfileFormProps) {
                 min={65}
                 max={70}
                 defaultValue={65}
-                className={inputClassName}
+                className="field"
               />
             </div>
           </div>

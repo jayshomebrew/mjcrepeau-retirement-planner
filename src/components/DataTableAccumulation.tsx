@@ -4,6 +4,9 @@ import { useCountry } from '../contexts/CountryContext';
 import { getEmployerMatch, supportsEmployerMatch } from '../utils/projections';
 import { buildAccumulationTable, buildExportMeta } from '../utils/export';
 import { CsvDownloadButton } from './CsvDownloadButton';
+import { Figure } from './Figure';
+import { SegmentedControl } from './SegmentedControl';
+import { Collapse } from './Collapse';
 
 interface DataTableAccumulationProps {
   accounts: Account[];
@@ -21,6 +24,37 @@ function formatCurrencyWithCode(value: number, currency: string = 'USD'): string
 }
 
 type ViewMode = 'summary' | 'balances' | 'contributions';
+
+const VIEW_OPTIONS: { id: ViewMode; label: string }[] = [
+  { id: 'summary', label: 'Summary' },
+  { id: 'balances', label: 'Balances by account' },
+  { id: 'contributions', label: 'Contributions' },
+];
+
+/*
+ * Booktabs-style table set on the paper: a heavier rule above the header and
+ * below the last row, a stronger rule under the header, hairlines between
+ * rows, no vertical lines. Rules sit on the cells (border-separate) rather
+ * than the rows so the sticky age column carries its own rules when the table
+ * scrolls sideways.
+ */
+const TABLE = 'min-w-full border-separate border-spacing-0 border-y-[1.5px] border-rule text-sm';
+const TBODY = '[&>tr:last-child>td]:border-b-0';
+const ROW = 'group hover:bg-hover';
+const CELL = 'py-2 px-2';
+// The age column stays put while the rest scrolls under it, so it needs an
+// opaque fill; bg-page repeats the viewport-fixed page texture so the column
+// blends into the page. The row's hover wash sits beneath that fill, so it is
+// layered back on top as a background image.
+const STICKY = 'sticky left-0 bg-page';
+const STICKY_HOVER = 'group-hover:bg-[linear-gradient(var(--hover),var(--hover))]';
+
+const TH = `${CELL} align-bottom font-serif italic text-[14px] font-normal border-b border-hair-strong`;
+const TH_AGE = `${TH} ${STICKY} text-left text-ink-2`;
+const TD = `${CELL} num text-[15px] border-b border-hair`;
+const TD_AGE = `${TD} ${STICKY} ${STICKY_HOVER} text-left text-ink`;
+const TF = `${CELL} num text-[15px] font-semibold border-t border-hair-strong`;
+const TF_LABEL = `${CELL} ${STICKY} text-left text-sm font-semibold text-ink border-t border-hair-strong`;
 
 export function DataTableAccumulation({
   accounts,
@@ -49,256 +83,221 @@ export function DataTableAccumulation({
   const getColorClass = (accountType: Account['type']): string => {
     const treatment = getTaxTreatment(accountType);
     switch (treatment) {
-      case 'pretax': return 'text-blue-600 dark:text-blue-400';
-      case 'roth': return 'text-green-600 dark:text-green-400';
-      case 'taxable': return 'text-amber-600 dark:text-amber-400';
-      case 'hsa': return 'text-purple-600 dark:text-purple-400';
+      case 'pretax': return 'text-pretax';
+      case 'roth': return 'text-roth';
+      case 'taxable': return 'text-taxable';
+      case 'hsa': return 'text-hsa';
     }
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-      {/* The CSV button sits beside the toggle, so the header is a row of
-          siblings rather than one full-width button — a button cannot nest. */}
-      <div className="w-full px-4 py-3 flex items-center gap-2 rounded-t-lg">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 flex-1 min-w-0 text-left px-1 -mx-1 py-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
-        >
-          <svg
-            className="w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+    <Figure
+      title="Year-by-year data"
+      actions={
+        <div className="flex items-center gap-2">
+          {isExpanded && <CsvDownloadButton getTable={buildCsvTable} />}
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+            aria-label="Year-by-year data"
+            title={isExpanded ? 'Hide table' : 'Show table'}
+            className="icon-btn"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <span className="font-medium text-gray-900 dark:text-white truncate">Year-by-Year Data</span>
-        </button>
+            <svg
+              className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+      }
+    >
+      <Collapse open={isExpanded}>
+        {/* Scrolls sideways on narrow screens; the padding keeps focus rings unclipped. */}
+        <div className="-mx-1 -mt-1 mb-3 p-1 overflow-x-auto scrollbar-hide">
+          <SegmentedControl
+            size="sm"
+            label="Table view"
+            options={VIEW_OPTIONS}
+            value={viewMode}
+            onChange={setViewMode}
+          />
+        </div>
 
-        {isExpanded && (
-          <div className="shrink-0">
-            <CsvDownloadButton getTable={buildCsvTable} />
-          </div>
-        )}
-
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          aria-label={isExpanded ? 'Collapse year-by-year data' : 'Expand year-by-year data'}
-          className="shrink-0 p-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+        <div
+          key={viewMode}
+          role="tabpanel"
+          aria-label={VIEW_OPTIONS.find(o => o.id === viewMode)?.label}
+          className="fade-in overflow-x-auto"
         >
-          <svg
-            className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-      </div>
+          {viewMode === 'summary' && (
+            <table className={TABLE}>
+              <thead>
+                <tr>
+                  <th className={TH_AGE}>Age</th>
+                  <th className={`${TH} text-left text-ink-2`}>Year</th>
+                  <th className={`${TH} text-right text-ink-2`}>Total balance</th>
+                  <th className={`${TH} text-right text-ink-2`}>Year growth</th>
+                  <th className={`${TH} text-right text-ink-2`}>Total contributions</th>
+                </tr>
+              </thead>
+              <tbody className={TBODY}>
+                {result.yearlyBalances.map((yearData, index) => {
+                  const prevBalance = index > 0 ? result.yearlyBalances[index - 1].totalBalance : yearData.totalBalance;
+                  const totalContrib = Object.values(yearData.contributions).reduce((sum, c) => sum + c, 0);
+                  const totalMatch = accounts.reduce((sum, acc) => {
+                    return sum + getEmployerMatch(acc, yearData.contributions[acc.id] || 0);
+                  }, 0);
+                  const growth = yearData.totalBalance - prevBalance;
 
-      {isExpanded && (
-        <div className="px-4 pb-4">
-          {/* View Mode Tabs */}
-          <div className="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto items-center">
-            <button
-              onClick={() => setViewMode('summary')}
-              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
-                viewMode === 'summary'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Summary
-            </button>
-            <button
-              onClick={() => setViewMode('balances')}
-              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
-                viewMode === 'balances'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Balances by Account
-            </button>
-            <button
-              onClick={() => setViewMode('contributions')}
-              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
-                viewMode === 'contributions'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Contributions
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            {viewMode === 'summary' && (
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800">Age</th>
-                    <th className="text-left py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Year</th>
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Total Balance</th>
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Year Growth</th>
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Total Contributions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.yearlyBalances.map((yearData, index) => {
-                    const prevBalance = index > 0 ? result.yearlyBalances[index - 1].totalBalance : yearData.totalBalance;
-                    const totalContrib = Object.values(yearData.contributions).reduce((sum, c) => sum + c, 0);
-                    const totalMatch = accounts.reduce((sum, acc) => {
-                      return sum + getEmployerMatch(acc, yearData.contributions[acc.id] || 0);
-                    }, 0);
-                    const growth = yearData.totalBalance - prevBalance;
-
-                    return (
-                      <tr key={yearData.age} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <td className="py-2 px-2 font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800">{yearData.age}</td>
-                        <td className="py-2 px-2 text-gray-600 dark:text-gray-400">{yearData.year}</td>
-                        <td className="py-2 px-2 text-right font-mono text-gray-900 dark:text-white">{formatCurrency(yearData.totalBalance)}</td>
-                        <td className={`py-2 px-2 text-right font-mono ${growth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {index === 0 ? '-' : (growth >= 0 ? '+' : '') + formatCurrency(growth)}
-                        </td>
-                        <td className="py-2 px-2 text-right font-mono text-gray-600 dark:text-gray-400">
-                          {formatCurrency(totalContrib + totalMatch)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-
-            {viewMode === 'balances' && (
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800">Age</th>
-                    {accounts.map(acc => (
-                      <th key={acc.id} className={`text-right py-2 px-2 font-medium ${getColorClass(acc.type)}`}>
-                        {acc.name}
-                      </th>
-                    ))}
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.yearlyBalances.map((yearData) => (
-                    <tr key={yearData.age} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="py-2 px-2 font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800">{yearData.age}</td>
-                      {accounts.map(acc => (
-                        <td key={acc.id} className="py-2 px-2 text-right font-mono text-gray-600 dark:text-gray-400">
-                          {formatCurrency(yearData.balances[acc.id] || 0)}
-                        </td>
-                      ))}
-                      <td className="py-2 px-2 text-right font-mono font-medium text-gray-900 dark:text-white">
-                        {formatCurrency(yearData.totalBalance)}
+                  return (
+                    <tr key={yearData.age} className={ROW}>
+                      <td className={TD_AGE}>{yearData.age}</td>
+                      <td className={`${TD} text-left text-ink-2`}>{yearData.year}</td>
+                      <td className={`${TD} text-right text-ink`}>{formatCurrency(yearData.totalBalance)}</td>
+                      <td className={`${TD} text-right ${growth >= 0 ? 'text-good' : 'text-bad'}`}>
+                        {index === 0 ? '–' : (growth >= 0 ? '+' : '') + formatCurrency(growth)}
+                      </td>
+                      <td className={`${TD} text-right text-ink-2`}>
+                        {formatCurrency(totalContrib + totalMatch)}
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
 
-            {viewMode === 'contributions' && (
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800">Age</th>
+          {viewMode === 'balances' && (
+            <table className={TABLE}>
+              <thead>
+                <tr>
+                  <th className={TH_AGE}>Age</th>
+                  {accounts.map(acc => (
+                    <th key={acc.id} className={`${TH} text-right ${getColorClass(acc.type)}`}>
+                      {acc.name}
+                    </th>
+                  ))}
+                  <th className={`${TH} text-right text-ink-2`}>Total</th>
+                </tr>
+              </thead>
+              <tbody className={TBODY}>
+                {result.yearlyBalances.map((yearData) => (
+                  <tr key={yearData.age} className={ROW}>
+                    <td className={TD_AGE}>{yearData.age}</td>
                     {accounts.map(acc => (
-                      <th key={acc.id} className={`text-right py-2 px-2 font-medium ${getColorClass(acc.type)}`}>
-                        {acc.name}
-                        {supportsEmployerMatch(acc) ? ' (+Match)' : ''}
-                      </th>
+                      <td key={acc.id} className={`${TD} text-right text-ink-2`}>
+                        {formatCurrency(yearData.balances[acc.id] || 0)}
+                      </td>
                     ))}
-                    <th className="text-right py-2 px-2 font-medium text-gray-700 dark:text-gray-300">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.yearlyBalances.map((yearData) => {
-                    let totalContrib = 0;
-                    return (
-                      <tr key={yearData.age} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <td className="py-2 px-2 font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800">{yearData.age}</td>
-                        {accounts.map(acc => {
-                          const contrib = yearData.contributions[acc.id] || 0;
-                          const match = getEmployerMatch(acc, contrib);
-                          totalContrib += contrib + match;
-                          return (
-                            <td key={acc.id} className="py-2 px-2 text-right font-mono text-gray-600 dark:text-gray-400">
-                              {formatCurrency(contrib)}
-                              {match > 0 && (
-                                <span className="text-green-600 dark:text-green-400 text-xs ml-1">
-                                  +{formatCurrency(match)}
-                                </span>
-                              )}
-                            </td>
-                          );
-                        })}
-                        <td className="py-2 px-2 text-right font-mono font-medium text-gray-900 dark:text-white">
-                          {formatCurrency(totalContrib)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900">
-                    <td className="py-2 px-2 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-gray-50 dark:bg-gray-900">Lifetime Total</td>
-                    {accounts.map(acc => {
-                      const lifetimeContrib = result.yearlyBalances.reduce((sum, year) => {
-                        const contrib = year.contributions[acc.id] || 0;
-                        const match = getEmployerMatch(acc, contrib);
-                        return sum + contrib + match;
-                      }, 0);
-                      return (
-                        <td key={acc.id} className="py-2 px-2 text-right font-mono font-medium text-gray-700 dark:text-gray-300">
-                          {formatCurrency(lifetimeContrib)}
-                        </td>
-                      );
-                    })}
-                    <td className="py-2 px-2 text-right font-mono font-bold text-gray-900 dark:text-white">
-                      {formatCurrency(
-                        result.yearlyBalances.reduce((sum, year) => {
-                          return sum + accounts.reduce((accSum, acc) => {
-                            const contrib = year.contributions[acc.id] || 0;
-                            const match = getEmployerMatch(acc, contrib);
-                            return accSum + contrib + match;
-                          }, 0);
-                        }, 0)
-                      )}
+                    <td className={`${TD} text-right text-ink`}>
+                      {formatCurrency(yearData.totalBalance)}
                     </td>
                   </tr>
-                </tfoot>
-              </table>
-            )}
-          </div>
+                ))}
+              </tbody>
+            </table>
+          )}
 
-          {/* Legend */}
-          <div className="mt-4 flex flex-wrap gap-4 text-xs">
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-blue-500"></span>
-              <span className="text-gray-600 dark:text-gray-400">Pre-tax</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-green-500"></span>
-              <span className="text-gray-600 dark:text-gray-400">Roth</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-amber-500"></span>
-              <span className="text-gray-600 dark:text-gray-400">Taxable</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-purple-500"></span>
-              <span className="text-gray-600 dark:text-gray-400">HSA</span>
-            </div>
+          {viewMode === 'contributions' && (
+            <table className={TABLE}>
+              <thead>
+                <tr>
+                  <th className={TH_AGE}>Age</th>
+                  {accounts.map(acc => (
+                    <th key={acc.id} className={`${TH} text-right ${getColorClass(acc.type)}`}>
+                      {acc.name}
+                      {supportsEmployerMatch(acc) ? ' (+match)' : ''}
+                    </th>
+                  ))}
+                  <th className={`${TH} text-right text-ink-2`}>Total</th>
+                </tr>
+              </thead>
+              <tbody className={TBODY}>
+                {result.yearlyBalances.map((yearData) => {
+                  let totalContrib = 0;
+                  return (
+                    <tr key={yearData.age} className={ROW}>
+                      <td className={TD_AGE}>{yearData.age}</td>
+                      {accounts.map(acc => {
+                        const contrib = yearData.contributions[acc.id] || 0;
+                        const match = getEmployerMatch(acc, contrib);
+                        totalContrib += contrib + match;
+                        return (
+                          <td key={acc.id} className={`${TD} text-right text-ink-2`}>
+                            {formatCurrency(contrib)}
+                            {match > 0 && (
+                              <span className="text-good text-xs ml-1">
+                                +{formatCurrency(match)}
+                              </span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td className={`${TD} text-right text-ink`}>
+                        {formatCurrency(totalContrib)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td className={TF_LABEL}>Lifetime total</td>
+                  {accounts.map(acc => {
+                    const lifetimeContrib = result.yearlyBalances.reduce((sum, year) => {
+                      const contrib = year.contributions[acc.id] || 0;
+                      const match = getEmployerMatch(acc, contrib);
+                      return sum + contrib + match;
+                    }, 0);
+                    return (
+                      <td key={acc.id} className={`${TF} text-right text-ink`}>
+                        {formatCurrency(lifetimeContrib)}
+                      </td>
+                    );
+                  })}
+                  <td className={`${TF} text-right text-ink`}>
+                    {formatCurrency(
+                      result.yearlyBalances.reduce((sum, year) => {
+                        return sum + accounts.reduce((accSum, acc) => {
+                          const contrib = year.contributions[acc.id] || 0;
+                          const match = getEmployerMatch(acc, contrib);
+                          return accSum + contrib + match;
+                        }, 0);
+                      }, 0)
+                    )}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          )}
+        </div>
+
+        {/* Legend */}
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 font-serif text-[13px] text-ink-2">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-pretax" aria-hidden="true"></span>
+            <span>Pre-tax</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-roth" aria-hidden="true"></span>
+            <span>Roth</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-taxable" aria-hidden="true"></span>
+            <span>Taxable</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-hsa" aria-hidden="true"></span>
+            <span>HSA</span>
           </div>
         </div>
-      )}
-    </div>
+      </Collapse>
+    </Figure>
   );
 }

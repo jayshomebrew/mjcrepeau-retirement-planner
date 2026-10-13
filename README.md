@@ -17,7 +17,7 @@ The calculator supports retirement planning for both **United States** and **Can
 - **Account Types**: Traditional 401(k), Roth 401(k), Traditional IRA, Roth IRA, Taxable Brokerage, HSA
 - **Tax System**: Federal income tax brackets, state tax rates, capital gains rates
 - **Benefits**: Social Security modeled via Income Streams (see below)
-- **RMDs**: Required Minimum Distributions starting at age 73
+- **RMDs**: Required Minimum Distributions starting at age 73 (born before 1960) or 75 (born 1960 or later), per SECURE 2.0
 
 #### Canada
 - **Account Types**: RRSP, TFSA, RRIF, LIRA, LIF, FHSA, Non-registered, Employer RRSP
@@ -25,12 +25,13 @@ The calculator supports retirement planning for both **United States** and **Can
 - **Benefits**: CPP (Canada Pension Plan) and OAS (Old Age Security)
 - **RRIF Minimums**: Mandatory withdrawals starting at age 71
 
-Switching countries automatically resets accounts and profile to country-appropriate defaults.
+Switching countries asks for confirmation, then resets accounts, profile, and income streams to that country's defaults. Economic assumptions are kept.
 
 ### Portfolio Management
 - **Multiple Account Types**: Support for US and Canadian retirement account types
-- **Employer Matching**: Configure employer match percentage and limits for 401(k)/RRSP accounts
-- **Individual Returns**: Set expected return rates per account
+- **Employer Matching**: Configure employer match percentage and limits for 401(k) (traditional and Roth) and Employer RRSP accounts
+- **Individual Returns**: Set expected return rates per account for the accumulation phase (retirement uses a single retirement return rate)
+- **Cost Basis**: Enter a taxable account's cost basis so withdrawals are taxed only on the gains
 - **Contribution Growth**: Model salary increases affecting future contributions
 - **Configurable Withdrawal Ages**: Set when withdrawals begin from each account to model early retirement scenarios
 
@@ -38,7 +39,7 @@ Switching countries automatically resets accounts and profile to country-appropr
 Model multiple sources of retirement income beyond portfolio withdrawals:
 - **Flexible Sources**: Social Security, pensions, annuities, part-time work, VA disability, rental income, etc.
 - **Tax Treatment Options**: Each stream is assigned one of four tax categories:
-  - *Social Security* — 85% taxable
+  - *Social Security* — 0–85% taxable via the IRS provisional-income formula (US); 85% for US benefits received by a Canadian resident, per the tax treaty
   - *Pension / Annuity* — 100% taxable as ordinary income
   - *Other Income* — 100% taxable as ordinary income
   - *Tax-Free* — excluded from taxable income (e.g., VA disability)
@@ -53,13 +54,13 @@ Model multiple sources of retirement income beyond portfolio withdrawals:
 
 ### Tax-Optimized Withdrawals
 The withdrawal algorithm follows a tax-efficient strategy:
-1. **Required Minimum Distributions (RMDs)**: Mandatory withdrawals from traditional accounts starting at age 73
+1. **Required Minimum Distributions (RMDs)**: Mandatory withdrawals from traditional accounts starting at age 73 or 75 depending on birth year (RRIF minimums from 71 in Canada)
 2. **Account Availability**: Respects configured withdrawal start ages (e.g., delaying IRA withdrawals until age 60)
 3. **Early Withdrawal Penalties**: Calculates 10% penalty for US traditional account withdrawals before age 59.5
 4. **Tax Bracket Optimization**: Fill lower tax brackets with traditional withdrawals
 5. **Roth Withdrawals**: Tax-free withdrawals for remaining needs
 6. **Taxable Account Withdrawals**: With capital gains tracking
-7. **HSA**: Used last, tax-free for qualified medical expenses
+7. **HSA**: Used after taxable accounts; modeled as tax-free and penalty-free (assumes qualified medical expenses)
 8. **Early Withdrawal Fallback**: If all available accounts are exhausted, withdraws from accounts before their configured start age, incurring early-withdrawal penalties (10% for US traditional accounts before age 59.5)
 
 ### Tax Calculations
@@ -69,7 +70,7 @@ The withdrawal algorithm follows a tax-efficient strategy:
 - Long-term capital gains rates with 0%/15%/20% brackets
 - State tax rate configuration
 - Standard deduction applied automatically
-- Social Security taxation (85% taxable)
+- Social Security taxation via the provisional-income phase-in (0–85% taxable; the thresholds are frozen by law, not indexed)
 
 #### Canada
 - 2026 Federal tax brackets with Basic Personal Amount
@@ -82,7 +83,8 @@ The withdrawal algorithm follows a tax-efficient strategy:
 - **Drawdown Chart**: Portfolio balance through retirement years
 - **Income Chart**: Annual retirement income breakdown (withdrawals, income streams by tax treatment, taxes)
 - **Tax Chart**: Tax burden over time
-- **Composition Chart**: Pie chart of portfolio allocation by tax treatment
+- **Composition Chart**: Donut charts of the portfolio at retirement, by account type and by account, each with a table of figures
+- **Timeline**: Today, retirement, benefit start ages, RMD/RRIF start, and the end of the plan on one line, with a marker if the money runs out early
 
 ### Screenshots
 ![Graph showing cash accumulation over working years](screenshots/accumulation.png "Accumulation graph")
@@ -108,7 +110,7 @@ Full visibility into how every number is calculated:
   - *Withdrawal Phase*: Income & spending, income streams breakdown, withdrawals by account, remaining balances, and tax details
   - Lifetime totals and color-coded by tax treatment
 
-- **Expandable Summary Cards**: Click any summary metric to see:
+- **Key Figures**: The headline portfolio figure and a ruled table of key figures (withdrawals, how long the portfolio lasts, lifetime taxes, penalties). Click any figure to see:
   - The formula used to calculate it
   - Step-by-step calculation breakdown
   - Context and explanations for the values
@@ -120,14 +122,15 @@ Three ways to get data out of the planner, from the **Export** menu in the heade
 - **Load plan (.json)**: Restores a saved plan. Every field is validated with readable errors, unknown fields are dropped rather than written to storage, and a confirmation modal previews the incoming plan before anything is overwritten. Plans saved in one country can be loaded in the other; the modal flags the switch.
 - **Print / Save as PDF**: Renders a full report — cover page, plan inputs, summary, charts, year-by-year tables, and methodology — and hands it to your browser's print dialog, so "Save as PDF" produces the file.
 
-Each year-by-year data panel also has a **Download CSV** button in its header that exports whichever view is currently active. CSVs lead with the header row so spreadsheets auto-detect it, carry raw unformatted numbers, and append a metadata block after a trailing blank line.
+Each year-by-year data panel, once expanded, also has a **Download CSV** button in its header that exports whichever view is currently active. CSVs lead with the header row so spreadsheets auto-detect it, carry raw unformatted numbers, and append a metadata block after a trailing blank line.
 
-**A note on nominal vs. real dollars**: every figure the engine produces is in nominal (future) dollars. Exports keep nominal as the primary columns, add a Real column for headline figures, and include an `Inflation Factor` column so any other column can be deflated in a spreadsheet. Because tax brackets are not indexed to inflation in this model, nominal tax figures include real bracket creep — deflating them gives the present value of dollars paid, not what an indexed-bracket world would charge.
+**A note on nominal vs. real dollars**: every figure the engine produces is in nominal (future) dollars. Exports keep nominal as the primary columns, add a Real column for headline figures, and include an `Inflation Factor` column so any other column can be deflated in a spreadsheet. Tax brackets, deductions, and benefit thresholds are indexed to the assumed inflation rate, as both countries do in law, so deflated tax figures reflect constant real tax policy rather than bracket creep. The exception is the US thresholds for taxing Social Security, which are frozen by statute and stay fixed.
 
 ### User Experience
-- **Dark Mode**: Toggle between light and dark themes
+- **Design**: Results are typeset on the page in Computer Modern; inputs and controls float above it on "liquid glass" panels
+- **Dark Mode**: Toggle between light and dark themes (follows the system setting until you choose)
 - **Data Persistence**: All data saved to localStorage automatically
-- **Reset Function**: Clear all data and start fresh
+- **Reset Function**: Clear accounts, profile, income streams, and assumptions and start fresh (country and theme are kept)
 - **Responsive Design**: Works on desktop and mobile devices
 
 ## Tech Stack
@@ -141,8 +144,8 @@ Each year-by-year data panel also has a **Download CSV** button in its header th
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- npm or yarn
+- Node.js 20.19+ or 22.12+ (required by Vite 7; CI uses Node 24)
+- npm
 
 ### Installation
 
@@ -188,23 +191,31 @@ src/
 │   ├── AccountList.tsx           # List of investment accounts
 │   ├── AssumptionsForm.tsx       # Economic assumptions input
 │   ├── ChartAccumulation.tsx     # Portfolio growth chart
-│   ├── ChartComposition.tsx      # Pie chart of allocations
+│   ├── ChartComposition.tsx      # Donut charts of allocation at retirement
 │   ├── ChartDrawdown.tsx         # Retirement drawdown chart
 │   ├── ChartIncome.tsx           # Retirement income chart
 │   ├── ChartTax.tsx              # Tax burden chart
+│   ├── chartTheme.ts             # Shared axis, legend, tooltip styling
+│   ├── Collapse.tsx              # Eased open/close region
 │   ├── CountrySelector.tsx       # Country switching dropdown
 │   ├── CsvDownloadButton.tsx     # Per-table CSV download button
 │   ├── DataTableAccumulation.tsx # Year-by-year accumulation data
 │   ├── DataTableWithdrawal.tsx   # Year-by-year withdrawal data
 │   ├── ExportMenu.tsx            # Save/load plan & print report menu
+│   ├── Figure.tsx                # On-page heading + caption for charts/tables
 │   ├── IncomeStreamForm.tsx     # Form for adding/editing income streams
 │   ├── IncomeStreamList.tsx     # List of income streams
-│   ├── Layout.tsx                # App layout with header/footer
+│   ├── Layout.tsx                # App layout with glass toolbar/footer
+│   ├── lens.ts                   # Motion for the sliding glass lenses
 │   ├── MethodologyPanel.tsx      # Formulas & assumptions reference
-│   ├── NumberInput.tsx           # String to number conversion
+│   ├── Modal.tsx                 # Confirmation dialog
+│   ├── NumberInput.tsx           # Numeric field with grouped thousands
 │   ├── PrintReport.tsx           # Printable full-report rendering
 │   ├── ProfileForm.tsx           # Personal information form
-│   ├── SummaryCards.tsx          # Expandable key metrics display
+│   ├── RetirementTimeline.tsx    # Milestones from today to plan end
+│   ├── SegmentedControl.tsx      # Tab strip with a sliding glass lens
+│   ├── SidebarSection.tsx        # Inputs-panel accordion section
+│   ├── SummaryCards.tsx          # Headline figure + key figures table
 │   └── Tooltip.tsx               # Reusable tooltip component
 ├── contexts/
 │   └── CountryContext.tsx    # Country selection state management
@@ -222,8 +233,10 @@ src/
 │       ├── taxes.ts          # CA tax calculations
 │       ├── withdrawals.ts    # RRIF minimum calculations
 │       └── benefits.ts       # CPP/OAS calculations
+├── assets/fonts/             # Computer Modern Serif (CMU) + OFL license
 ├── hooks/
-│   ├── useLocalStorage.ts    # localStorage persistence hook
+│   ├── useLocalStorage.ts    # localStorage persistence + dark mode
+│   ├── useRetained.ts        # Keeps content while a dialog animates closed
 │   └── useRetirementCalc.ts  # Main calculation orchestrator
 ├── types/
 │   └── index.ts              # TypeScript type definitions
@@ -237,19 +250,21 @@ src/
 │   │   ├── realDollars.ts    # Nominal -> real dollar conversion
 │   │   ├── format.ts         # Shared value/filename formatting
 │   │   └── download.ts       # Browser file download helper
-│   ├── constants.ts          # Tax brackets, RMD tables, defaults
+│   ├── constants.ts          # Chart colors, defaults (re-exports US tax tables)
+│   ├── format.ts             # Currency, compact and axis formatting
 │   ├── incomeStreams.ts      # Income stream tax calculations
 │   ├── penaltyCalculator.ts  # Early withdrawal penalty rules
 │   ├── projections.ts        # Accumulation phase calculations
 │   ├── storageKeys.ts        # Shared localStorage key names
-│   ├── taxes.ts              # Tax calculation functions
+│   ├── taxBrackets.ts        # Inflation indexing of brackets
+│   ├── taxes.ts              # Legacy US tax wrapper
 │   ├── withdrawalDefaults.ts # Default withdrawal start ages
 │   └── withdrawals.ts        # Withdrawal phase simulation
 ├── tests/
 │   ├── calculations.test.ts  # Comprehensive math tests (US & CA)
 │   └── export.test.ts        # CSV, table builder & scenario tests
 ├── App.tsx                   # Main application component
-├── index.css                 # Tailwind CSS configuration
+├── index.css                 # Design system: theme tokens, glass, components
 └── main.tsx                  # Application entry point
 ```
 
@@ -263,7 +278,7 @@ For each year until retirement:
 
 ### Withdrawal Phase
 For each year of retirement:
-1. Calculate Required Minimum Distribution (if age 73+)
+1. Calculate Required Minimum Distribution (from age 73 or 75 by birth year; RRIF minimums from 71)
 2. Determine target spending (safe withdrawal rate + inflation)
 3. Subtract income streams and government benefits from spending need
 4. Withdraw from accounts in tax-optimized order
@@ -275,8 +290,9 @@ For each year of retirement:
 - Contributions are made at year-end
 - RMDs follow the IRS Uniform Lifetime Table
 - Income streams and government benefits grow with inflation
-- Tax brackets are 2026 values (not inflation-adjusted)
-- CPP and OAS are modeled as 100% taxable income; US Social Security income streams are 85% taxable (maximum portion)
+- Investment returns are per account while saving; in retirement every account earns the single retirement return rate
+- Tax brackets, deductions, and basic personal amounts are 2026 values, indexed to the assumed inflation rate in future years
+- CPP and OAS are modeled as 100% taxable income; US Social Security follows the provisional-income phase-in (0–85% taxable)
 - The spending target is pre-tax; taxes are paid out of withdrawals rather than added on top
 - RMD/RRIF withdrawals in excess of the spending need are counted as income for that year rather than reinvested
 
@@ -291,8 +307,10 @@ For each year of retirement:
 | Inflation Rate | 3% |
 | Safe Withdrawal Rate | 4% |
 | Retirement Return Rate | 5% |
-| CPP Benefit (Canada) | $16,375/year (CPP maximum at 65) |
+| CPP Benefit (Canada) | $18,092/year (CPP maximum at 65) |
 | CPP Start Age (Canada) | 65 |
+| OAS Benefit (Canada) | $8,908/year (OAS maximum at 65) |
+| OAS Start Age (Canada) | 65 |
 
 ### Account Defaults
 | Setting | Default |

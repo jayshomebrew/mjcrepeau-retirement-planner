@@ -9,8 +9,6 @@ interface IncomeStreamFormProps {
   onCancel: () => void;
 }
 
-const inputClassName = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white";
-const inputErrorClassName = "w-full px-3 py-2 border border-red-500 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white";
 
 const TAX_TREATMENTS: IncomeTaxTreatment[] = ['social_security', 'fully_taxable', 'other_income', 'tax_free'];
 
@@ -77,45 +75,47 @@ export function IncomeStreamForm({ incomeStream, onSave, onCancel }: IncomeStrea
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3.5">
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Name *
+        <label className="field-label">
+          Name
         </label>
         <input
           type="text"
           value={formData.name}
           onChange={(e) => handleChange('name', e.target.value)}
-          placeholder="e.g., Social Security, NC State Pension"
-          className={errors.name ? inputErrorClassName : inputClassName}
+          placeholder="Social Security"
+          aria-invalid={errors.name ? true : undefined}
+          className="field"
         />
-        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+        {errors.name && <p className="field-error">{errors.name}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Monthly Benefit ($)
+          <label className="field-label">
+            Monthly amount ($)
           </label>
           <NumberInput
             value={formData.monthlyAmount}
             onChange={(val) => handleChange('monthlyAmount', val)}
             min={0}
             defaultValue={0}
-            className={errors.monthlyAmount ? inputErrorClassName : inputClassName}
+            invalid={!!errors.monthlyAmount}
+            className="field"
           />
           {errors.monthlyAmount ? (
-            <p className="text-red-500 text-xs mt-1">{errors.monthlyAmount}</p>
+            <p className="field-error">{errors.monthlyAmount}</p>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
-              In today's dollars — automatically adjusted for inflation to your retirement years.
+            <p className="field-hint">
+              In today's dollars. Adjusted for inflation automatically.
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Start Age
+          <label className="field-label">
+            Start age
           </label>
           <NumberInput
             value={formData.startAge}
@@ -123,15 +123,16 @@ export function IncomeStreamForm({ incomeStream, onSave, onCancel }: IncomeStrea
             min={0}
             max={120}
             defaultValue={67}
-            className={errors.startAge ? inputErrorClassName : inputClassName}
+            invalid={!!errors.startAge}
+            className="field"
           />
-          {errors.startAge && <p className="text-red-500 text-xs mt-1">{errors.startAge}</p>}
+          {errors.startAge && <p className="field-error">{errors.startAge}</p>}
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          End Age <span className="text-gray-400 font-normal">(optional — leave blank for lifetime)</span>
+        <label className="field-label">
+          End age <span className="font-normal">(optional, blank for lifetime)</span>
         </label>
         <input
           type="number"
@@ -149,20 +150,21 @@ export function IncomeStreamForm({ incomeStream, onSave, onCancel }: IncomeStrea
           }}
           min={0}
           max={120}
-          placeholder="e.g., 62"
-          className={errors.endAge ? inputErrorClassName : inputClassName}
+          placeholder="62"
+          aria-invalid={errors.endAge ? true : undefined}
+          className="field"
         />
-        {errors.endAge && <p className="text-red-500 text-xs mt-1">{errors.endAge}</p>}
+        {errors.endAge && <p className="field-error">{errors.endAge}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Tax Treatment
+        <label className="field-label">
+          Tax treatment
         </label>
         <select
           value={formData.taxTreatment}
           onChange={(e) => handleChange('taxTreatment', e.target.value as IncomeTaxTreatment)}
-          className={inputClassName}
+          className="field"
         >
           {TAX_TREATMENTS.map(treatment => (
             <option key={treatment} value={treatment}>
@@ -170,24 +172,17 @@ export function IncomeStreamForm({ incomeStream, onSave, onCancel }: IncomeStrea
             </option>
           ))}
         </select>
-        <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
+        <p className="field-hint">
           {TAX_TREATMENT_DESCRIPTIONS[formData.taxTreatment]}
         </p>
       </div>
 
-      <div className="flex justify-end gap-3 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500"
-        >
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="button" onClick={onCancel} className="btn btn-ghost">
           Cancel
         </button>
-        <button
-          type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-        >
-          {incomeStream ? 'Update' : 'Add Income Stream'}
+        <button type="submit" className="btn btn-primary">
+          {incomeStream ? 'Save changes' : 'Add income stream'}
         </button>
       </div>
     </form>

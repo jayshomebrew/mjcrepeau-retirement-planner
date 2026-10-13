@@ -71,7 +71,7 @@ function metaRows(title: string, meta: ExportMeta): string[] {
     row(['# Life expectancy', profile.lifeExpectancy]),
     row([
       '# Note',
-      'Tax brackets are not indexed to inflation in this model, so nominal tax figures include bracket creep. Deflating them gives the present value of the dollars paid, but the modelled burden is still higher than it would be under indexed brackets.',
+      'Tax brackets, deductions, and benefit thresholds are indexed to the inflation rate, as under current law, so deflated tax figures reflect constant real tax policy with no bracket creep. US Social Security taxation thresholds are the exception: they are frozen by law and not indexed.',
     ]),
     row([
       '# Disclaimer',

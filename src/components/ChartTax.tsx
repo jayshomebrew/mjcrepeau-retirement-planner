@@ -9,28 +9,20 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS, LEGEND_PROPS, currencyAxisProps } from './chartTheme';
+import { niceTicks } from '../utils/format';
 import { RetirementResult } from '../types';
 import { CHART_COLORS } from '../utils/constants';
+import { useCountry } from '../contexts/CountryContext';
 
 interface ChartTaxProps {
   result: RetirementResult;
-  isDarkMode?: boolean;
   /**
    * Recharts reveals series by animating a clip path from zero width. The
    * print report is captured moments after mount, so animation must be off
    * or the chart prints blank.
    */
   animate?: boolean;
-}
-
-function formatCurrency(value: number): string {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toFixed(0)}`;
 }
 
 function formatTooltipValue(value: number): string {
@@ -46,9 +38,10 @@ interface CustomTooltipProps {
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: number;
   result: RetirementResult;
+  regionalLabel: string;
 }
 
-function CustomTooltip({ active, payload, label, result }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, label, result, regionalLabel }: CustomTooltipProps) {
   if (!active || !payload) return null;
 
   const yearData = result.yearlyWithdrawals.find(y => y.age === label);
@@ -59,31 +52,31 @@ function CustomTooltip({ active, payload, label, result }: CustomTooltipProps) {
     : '0.0';
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-      <p className="font-medium text-gray-900 dark:text-white mb-2">Age {label}</p>
+    <div className={TOOLTIP_CLASS}>
+      <p className="text-xs text-ink-2 mb-1.5">Age {label}</p>
       <div className="space-y-1 text-sm">
         <div className="flex justify-between gap-4">
-          <span className="text-blue-600 dark:text-blue-400">Federal Tax:</span>
-          <span className="font-medium text-gray-900 dark:text-white">{formatTooltipValue(yearData.federalTax)}</span>
+          <span style={{ color: CHART_COLORS.pretax }}>Federal tax</span>
+          <span className="num text-ink">{formatTooltipValue(yearData.federalTax)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span className="text-purple-600 dark:text-purple-400">State Tax:</span>
-          <span className="font-medium text-gray-900 dark:text-white">{formatTooltipValue(yearData.stateTax)}</span>
+          <span style={{ color: CHART_COLORS.hsa }}>{regionalLabel}</span>
+          <span className="num text-ink">{formatTooltipValue(yearData.stateTax)}</span>
         </div>
         {yearData.totalPenalties > 0 && (
           <div className="flex justify-between gap-4">
-            <span className="text-red-600 dark:text-red-400">Penalties:</span>
-            <span className="font-medium text-red-600 dark:text-red-400">{formatTooltipValue(yearData.totalPenalties)}</span>
+            <span className="text-bad">Penalties</span>
+            <span className="num text-bad">{formatTooltipValue(yearData.totalPenalties)}</span>
           </div>
         )}
-        <div className="border-t border-gray-200 dark:border-gray-600 mt-2 pt-2">
-          <div className="flex justify-between gap-4 font-semibold">
-            <span style={{ color: CHART_COLORS.tax }}>Total Tax:</span>
-            <span className="text-gray-900 dark:text-white">{formatTooltipValue(yearData.totalTax)}</span>
+        <div className="border-t border-hair mt-2 pt-2">
+          <div className="flex justify-between gap-4 font-medium">
+            <span style={{ color: CHART_COLORS.tax }}>Total tax</span>
+            <span className="num text-ink">{formatTooltipValue(yearData.totalTax)}</span>
           </div>
-          <div className="flex justify-between gap-4 text-gray-600 dark:text-gray-400 mt-1">
-            <span>Effective Rate:</span>
-            <span>{effectiveRate}%</span>
+          <div className="flex justify-between gap-4 text-ink-2 mt-1">
+            <span>Effective rate</span>
+            <span className="num">{effectiveRate}%</span>
           </div>
         </div>
       </div>
@@ -91,11 +84,10 @@ function CustomTooltip({ active, payload, label, result }: CustomTooltipProps) {
   );
 }
 
-export function ChartTax({ result, isDarkMode = false, animate = true }: ChartTaxProps) {
-  // Colors based on dark mode
-  const gridColor = isDarkMode ? '#374151' : '#e5e7eb';
-  const tickColor = isDarkMode ? '#9ca3af' : '#6b7280';
-  const tickLineColor = isDarkMode ? '#4b5563' : '#d1d5db';
+export function ChartTax({ result, animate = true }: ChartTaxProps) {
+  const { country } = useCountry();
+  const regionalLabel = country === 'CA' ? 'Provincial tax' : 'State tax';
+
   // Transform data for the chart
   const chartData = result.yearlyWithdrawals.map(year => {
     const effectiveRate = year.grossIncome > 0
@@ -111,64 +103,57 @@ export function ChartTax({ result, isDarkMode = false, animate = true }: ChartTa
     };
   });
 
+  // The rate axis gets the same round-number treatment as the currency axis,
+  // and never drops below a 0–20% scale so a low flat rate still reads.
+  const rateAxis = niceTicks(Math.max(20, ...chartData.map(d => d.effectiveRate)));
+
   return (
     <div className="w-full h-80 touch-pan-y">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 10, right: 50, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+        <ComposedChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+          <CartesianGrid vertical={false} stroke={CHART_THEME.grid} />
           <XAxis
             dataKey="age"
-            tick={{ fontSize: 12, fill: tickColor }}
-            tickLine={{ stroke: tickLineColor }}
-            stroke={tickLineColor}
+            {...AXIS_PROPS}
           />
-          <YAxis
-            yAxisId="left"
-            tickFormatter={formatCurrency}
-            tick={{ fontSize: 12, fill: tickColor }}
-            tickLine={{ stroke: tickLineColor }}
-            stroke={tickLineColor}
-            width={60}
-          />
+          <YAxis yAxisId="left" {...currencyAxisProps(Math.max(...chartData.map(d => d.totalTax)))} />
           <YAxis
             yAxisId="right"
             orientation="right"
-            tickFormatter={(v) => `${v.toFixed(0)}%`}
-            tick={{ fontSize: 12, fill: tickColor }}
-            tickLine={{ stroke: tickLineColor }}
-            stroke={tickLineColor}
-            domain={[0, 40]}
-            width={50}
+            tickFormatter={(v: number) => `${v}%`}
+            {...AXIS_PROPS}
+            {...rateAxis}
+            width={44}
           />
-          <Tooltip content={<CustomTooltip result={result} />} />
+          <Tooltip content={<CustomTooltip result={result} regionalLabel={regionalLabel} />} cursor={BAR_CURSOR} />
           <Legend
-            wrapperStyle={{ paddingTop: '10px' }}
-            formatter={(value) => <span style={{ color: tickColor }}>{value}</span>}
+            {...LEGEND_PROPS}
+            formatter={(value) => <span style={{ color: CHART_THEME.legend }}>{value}</span>}
           />
           <Bar
             isAnimationActive={animate}
             yAxisId="left"
             dataKey="federalTax"
-            name="Federal Tax"
+            name="Federal tax"
             stackId="tax"
-            fill="#3b82f6"
-            fillOpacity={0.8}
+            fill={CHART_COLORS.pretax}
+            fillOpacity={0.85}
           />
           <Bar
             isAnimationActive={animate}
             yAxisId="left"
             dataKey="stateTax"
-            name="State Tax"
+            name={regionalLabel}
             stackId="tax"
-            fill="#8b5cf6"
-            fillOpacity={0.8}
+            fill={CHART_COLORS.hsa}
+            fillOpacity={0.85}
           />
           <Line
             isAnimationActive={animate}
             yAxisId="right"
             type="monotone"
             dataKey="effectiveRate"
-            name="Effective Rate"
+            name="Effective rate"
             stroke={CHART_COLORS.tax}
             strokeWidth={2}
             dot={false}

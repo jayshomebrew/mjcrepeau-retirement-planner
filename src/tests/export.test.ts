@@ -25,6 +25,7 @@ import {
   scenarioFilename,
 } from '../utils/export/scenario';
 import type { ExportTable } from '../utils/export/types';
+import { formatCompactCurrency } from '../utils/format';
 
 // Test utilities
 let passedTests = 0;
@@ -247,8 +248,8 @@ function testCsvStructure(): void {
     'Metadata records the inflation rate used'
   );
   assert(
-    metaLines.some(line => line.includes('bracket creep')),
-    'Metadata warns that nominal tax figures include bracket creep'
+    metaLines.some(line => line.includes('indexed to the inflation rate')),
+    'Metadata notes that tax brackets are indexed to inflation'
   );
 
   assertEqual(
@@ -757,6 +758,18 @@ function testScenarioCountrySwitch(): void {
 // RUN
 // =============================================================================
 
+function testCompactCurrency(): void {
+  section('Compact currency (summary tiles)');
+
+  assertEqual(formatCompactCurrency(950), '$950', 'Below $1,000 shows whole dollars');
+  assertEqual(formatCompactCurrency(14451), '$14.5k', 'Thousands keep one decimal');
+  assertEqual(formatCompactCurrency(173412), '$173.4k', 'Hundreds of thousands keep one decimal');
+  assertEqual(formatCompactCurrency(1435043), '$1.44M', 'Millions keep two decimals');
+  assertEqual(formatCompactCurrency(999960), '$1.00M', 'Rounding up to the next unit switches units');
+  assertEqual(formatCompactCurrency(999.6), '$1.0k', 'Rounding up past $1,000 switches to thousands');
+  assertEqual(formatCompactCurrency(-2500), '-$2.5k', 'Negative values keep their sign');
+}
+
 function runAllTests(): void {
   console.log('\n' + '█'.repeat(60));
   console.log('EXPORT FEATURE TEST SUITE');
@@ -775,6 +788,7 @@ function runAllTests(): void {
   testScenarioDropsUnknownFields();
   testScenarioValidation();
   testScenarioCountrySwitch();
+  testCompactCurrency();
 
   console.log('\n' + '='.repeat(60));
   console.log('TEST SUMMARY');

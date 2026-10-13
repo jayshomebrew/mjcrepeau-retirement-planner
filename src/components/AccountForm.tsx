@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Collapse } from './Collapse';
 import { Account, AccountType, Profile, getAccountTypeLabel, is401k, getTaxTreatment } from '../types';
 import { NumberInput } from './NumberInput';
 import { Tooltip } from './Tooltip';
@@ -23,8 +24,6 @@ const defaultAccount: Omit<Account, 'id'> = {
   returnRate: 0.07,
 };
 
-const inputClassName = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white";
-const inputErrorClassName = "w-full px-3 py-2 border border-red-500 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-white";
 
 export function AccountForm({ account, profile, onSave, onCancel }: AccountFormProps) {
   const { config: countryConfig } = useCountry();
@@ -139,29 +138,30 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
   const showEmployerMatchFields = is401k(formData.type) || formData.type === 'employer_rrsp';
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3.5">
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Account Name *
+        <label className="field-label">
+          Account name
         </label>
         <input
           type="text"
           value={formData.name}
           onChange={(e) => handleChange('name', e.target.value)}
-          placeholder="e.g., Company 401(k)"
-          className={errors.name ? inputErrorClassName : inputClassName}
+          placeholder="Company 401(k)"
+          aria-invalid={errors.name ? true : undefined}
+          className="field"
         />
-        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+        {errors.name && <p className="field-error">{errors.name}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Account Type
+        <label className="field-label">
+          Account type
         </label>
         <select
           value={formData.type}
           onChange={(e) => handleChange('type', e.target.value as AccountType)}
-          className={inputClassName}
+          className="field"
         >
           {accountTypes.map(type => (
             <option key={type} value={type}>
@@ -171,25 +171,26 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
         </select>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 items-end">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Current Balance ($)
+          <label className="field-label">
+            Current balance ($)
           </label>
           <NumberInput
             value={formData.balance}
             onChange={(val) => handleChange('balance', val)}
             min={0}
             defaultValue={0}
-            className={errors.balance ? inputErrorClassName : inputClassName}
+            invalid={!!errors.balance}
+            className="field"
           />
-          {errors.balance && <p className="text-red-500 text-xs mt-1">{errors.balance}</p>}
+          {errors.balance && <p className="field-error">{errors.balance}</p>}
         </div>
 
         {getTaxTreatment(formData.type) === 'taxable' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Cost Basis ($)
+            <label className="field-label">
+              Cost basis ($)
               <Tooltip text="The amount you originally invested (contributions, not growth). Used to compute the taxable gains portion of withdrawals. Leave equal to the balance if you have no unrealized gains; future contributions are added to it automatically." />
             </label>
             <NumberInput
@@ -197,33 +198,35 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
               onChange={(val) => handleChange('costBasis', val)}
               min={0}
               defaultValue={formData.balance}
-              className={errors.costBasis ? inputErrorClassName : inputClassName}
+              invalid={!!errors.costBasis}
+            className="field"
             />
-            {errors.costBasis && <p className="text-red-500 text-xs mt-1">{errors.costBasis}</p>}
+            {errors.costBasis && <p className="field-error">{errors.costBasis}</p>}
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Annual Contribution ($)
+          <label className="field-label">
+            Annual contribution ($)
           </label>
           <NumberInput
             value={formData.annualContribution}
             onChange={(val) => handleChange('annualContribution', val)}
             min={0}
             defaultValue={0}
-            className={errors.annualContribution ? inputErrorClassName : inputClassName}
+            invalid={!!errors.annualContribution}
+            className="field"
           />
           {errors.annualContribution && (
-            <p className="text-red-500 text-xs mt-1">{errors.annualContribution}</p>
+            <p className="field-error">{errors.annualContribution}</p>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 items-end">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Contribution Growth Rate (%)
+          <label className="field-label">
+            Contribution growth (%)
             <Tooltip text="Annual increase in contributions (e.g., salary raises)" />
           </label>
           <NumberInput
@@ -234,13 +237,13 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
             isPercentage
             decimals={1}
             defaultValue={0.03}
-            className={inputClassName}
+            className="field"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Expected Return (%)
+          <label className="field-label">
+            Expected return (%)
           </label>
           <NumberInput
             value={formData.returnRate}
@@ -250,20 +253,20 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
             isPercentage
             decimals={1}
             defaultValue={0.07}
-            className={inputClassName}
+            className="field"
           />
         </div>
       </div>
 
-      {showEmployerMatchFields && (
-        <div className="border-t border-gray-200 dark:border-gray-600 pt-4 mt-4">
-          <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">
-            {is401k(formData.type) ? '401(k) Employer Match' : 'Employer Match'}
+      <Collapse open={showEmployerMatchFields} className="mb-0!">
+        <div className="border-t border-hair pt-3.5 mb-3.5">
+          <h4 className="text-[13px] font-semibold text-ink mb-2.5">
+            {is401k(formData.type) ? '401(k) employer match' : 'Employer match'}
           </h4>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 items-end">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Match Percentage (%)
+              <label className="field-label">
+                Match rate (%)
                 <Tooltip text="What percent of your contribution does employer match?" />
               </label>
               <NumberInput
@@ -274,13 +277,13 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
                 isPercentage
                 decimals={0}
                 defaultValue={0}
-                className={inputClassName}
+                className="field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Match Limit ($)
+              <label className="field-label">
+                Match limit ($)
                 <Tooltip text="Maximum annual employer match in dollars" />
               </label>
               <NumberInput
@@ -288,22 +291,22 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
                 onChange={(val) => handleChange('employerMatchLimit', val)}
                 min={0}
                 defaultValue={0}
-                className={inputClassName}
+                className="field"
               />
             </div>
           </div>
         </div>
-      )}
+      </Collapse>
 
-      {/* Withdrawal Settings */}
-      <div className="border-t border-gray-200 dark:border-gray-600 pt-4 mt-4">
-        <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">
-          Withdrawal Settings
+      {/* Withdrawals */}
+      <div className="border-t border-hair pt-3.5">
+        <h4 className="text-[13px] font-semibold text-ink mb-2.5">
+          Withdrawals
         </h4>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Start Withdrawal Age
+          <label className="field-label">
+            Start withdrawals at age
             <Tooltip text="Age when you plan to start withdrawing from this account. Cannot be later than RMD age if applicable." />
           </label>
           <NumberInput
@@ -317,14 +320,14 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
             min={minWithdrawalAge}
             max={maxWithdrawalAge}
             defaultValue={currentWithdrawalAge}
-            className={inputClassName}
+            className="field"
           />
-          {showPenaltyWarning && (
-            <p className="mt-1 text-sm text-yellow-600 dark:text-yellow-500">
-              Warning: Withdrawing before age {Math.ceil(penaltyInfo.penaltyAge)} incurs a {(penaltyInfo.penaltyRate * 100).toFixed(0)}% penalty
+          <Collapse open={showPenaltyWarning}>
+            <p className="field-hint text-warn">
+              Withdrawing before age {Math.ceil(penaltyInfo.penaltyAge)} incurs a {(penaltyInfo.penaltyRate * 100).toFixed(0)}% penalty
             </p>
-          )}
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          </Collapse>
+          <p className="field-hint">
             Default: {getDefaultWithdrawalAge(
               { ...formData, id: account?.id || '' },
               profile.retirementAge,
@@ -336,19 +339,12 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500"
-        >
+      <div className="flex justify-end gap-2 pt-2">
+        <button type="button" onClick={onCancel} className="btn btn-ghost">
           Cancel
         </button>
-        <button
-          type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-        >
-          {account ? 'Update Account' : 'Add Account'}
+        <button type="submit" className="btn btn-primary">
+          {account ? 'Save changes' : 'Add account'}
         </button>
       </div>
     </form>
