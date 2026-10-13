@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Collapse } from './Collapse';
 import { Account, AccountType, Profile, getAccountTypeLabel, is401k, getTaxTreatment } from '../types';
 import { NumberInput } from './NumberInput';
 import { Tooltip } from './Tooltip';
@@ -257,8 +258,8 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
         </div>
       </div>
 
-      {showEmployerMatchFields && (
-        <div className="border-t border-hair pt-3.5">
+      <Collapse open={showEmployerMatchFields} className="mb-0!">
+        <div className="border-t border-hair pt-3.5 mb-3.5">
           <h4 className="text-[13px] font-semibold text-ink mb-2.5">
             {is401k(formData.type) ? '401(k) employer match' : 'Employer match'}
           </h4>
@@ -295,7 +296,7 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
             </div>
           </div>
         </div>
-      )}
+      </Collapse>
 
       {/* Withdrawals */}
       <div className="border-t border-hair pt-3.5">
@@ -321,11 +322,11 @@ export function AccountForm({ account, profile, onSave, onCancel }: AccountFormP
             defaultValue={currentWithdrawalAge}
             className="field"
           />
-          {showPenaltyWarning && (
+          <Collapse open={showPenaltyWarning}>
             <p className="field-hint text-warn">
               Withdrawing before age {Math.ceil(penaltyInfo.penaltyAge)} incurs a {(penaltyInfo.penaltyRate * 100).toFixed(0)}% penalty
             </p>
-          )}
+          </Collapse>
           <p className="field-hint">
             Default: {getDefaultWithdrawalAge(
               { ...formData, id: account?.id || '' },

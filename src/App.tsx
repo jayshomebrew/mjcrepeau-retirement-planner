@@ -33,6 +33,7 @@ import { SegmentedControl } from './components/SegmentedControl';
 import { SidebarSection } from './components/SidebarSection';
 import { Figure } from './components/Figure';
 import { Modal } from './components/Modal';
+import { useRetained } from './hooks/useRetained';
 import { v4 as uuidv4 } from 'uuid';
 
 // Default accounts for US
@@ -212,6 +213,9 @@ function AppContent() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [pendingImport, setPendingImport] = useState<ScenarioFile | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  // What the import dialogs keep showing while they animate closed.
+  const shownImport = useRetained(pendingImport);
+  const shownImportError = useRetained(importError);
   const [isPrinting, setIsPrinting] = useState(false);
   const printGeneratedAt = useRef(new Date());
 
@@ -409,8 +413,9 @@ function AppContent() {
         )
       }
     >
-      {pendingImport && (
+      {shownImport && (
         <Modal
+          open={pendingImport !== null}
           title="Load this plan?"
           onClose={cancelImport}
           actions={
@@ -428,65 +433,63 @@ function AppContent() {
             <div className="flex justify-between gap-4">
               <dt>Country</dt>
               <dd className="text-ink font-medium">
-                {pendingImport.country === 'CA' ? 'Canada' : 'United States'}
-                {pendingImport.country !== country && (
+                {shownImport.country === 'CA' ? 'Canada' : 'United States'}
+                {shownImport.country !== country && (
                   <span className="text-warn"> (switching)</span>
                 )}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt>Accounts</dt>
-              <dd className="text-ink num">{pendingImport.accounts.length}</dd>
+              <dd className="text-ink num">{shownImport.accounts.length}</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt>Income streams</dt>
-              <dd className="text-ink num">{pendingImport.incomeStreams.length}</dd>
+              <dd className="text-ink num">{shownImport.incomeStreams.length}</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt>Ages</dt>
               <dd className="text-ink num">
-                {pendingImport.profile.currentAge} → {pendingImport.profile.retirementAge}{' '}
-                → {pendingImport.profile.lifeExpectancy}
+                {shownImport.profile.currentAge} → {shownImport.profile.retirementAge}{' '}
+                → {shownImport.profile.lifeExpectancy}
               </dd>
             </div>
-            {pendingImport.exportedAt && (
+            {shownImport.exportedAt && (
               <div className="flex justify-between gap-4">
                 <dt>Saved</dt>
-                <dd className="text-ink num">{pendingImport.exportedAt.slice(0, 10)}</dd>
+                <dd className="text-ink num">{shownImport.exportedAt.slice(0, 10)}</dd>
               </div>
             )}
           </dl>
         </Modal>
       )}
 
-      {importError && (
-        <Modal
-          title="Couldn't load that file"
-          onClose={cancelImport}
-          actions={<button onClick={cancelImport} className="btn btn-primary">OK</button>}
-        >
-          <p className="mb-2 text-ink">{importError}</p>
-          <p>Your current plan hasn't changed.</p>
-        </Modal>
-      )}
+      <Modal
+        open={importError !== null}
+        title="Couldn't load that file"
+        onClose={cancelImport}
+        actions={<button onClick={cancelImport} className="btn btn-primary">OK</button>}
+      >
+        <p className="mb-2 text-ink">{shownImportError}</p>
+        <p>Your current plan hasn't changed.</p>
+      </Modal>
 
-      {showResetConfirm && (
-        <Modal
-          title="Reset all data?"
-          onClose={cancelReset}
-          actions={
-            <>
-              <button onClick={cancelReset} className="btn btn-ghost">Cancel</button>
-              <button onClick={confirmReset} className="btn btn-danger">Reset everything</button>
-            </>
-          }
-        >
-          <p>
-            This clears your saved accounts, profile, income streams, and assumptions. It can't be
-            undone.
-          </p>
-        </Modal>
-      )}
+      <Modal
+        open={showResetConfirm}
+        title="Reset all data?"
+        onClose={cancelReset}
+        actions={
+          <>
+            <button onClick={cancelReset} className="btn btn-ghost">Cancel</button>
+            <button onClick={confirmReset} className="btn btn-danger">Reset everything</button>
+          </>
+        }
+      >
+        <p>
+          This clears your saved accounts, profile, income streams, and assumptions. It can't be
+          undone.
+        </p>
+      </Modal>
 
       <div className="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)] gap-6 lg:gap-10 items-start">
         {/* Inputs: one glass panel floating over the page */}

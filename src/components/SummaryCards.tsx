@@ -13,6 +13,8 @@ import { presentValue } from '../utils/export/realDollars';
 import { formatCompactCurrency, formatCurrency as formatCurrencyWithCode } from '../utils/format';
 import { birthYearFromAge } from '../utils/withdrawalDefaults';
 import { RetirementTimeline, type TimelineEvent } from './RetirementTimeline';
+import { Collapse } from './Collapse';
+import { LENS_APPEAR_TRANSITION, lensEdgeTransition } from './lens';
 
 interface SummaryCardsProps {
   accounts: Account[];
@@ -79,6 +81,18 @@ interface Tile {
 const LENS_INSET_X = 6;
 const LENS_INSET_Y = 7;
 
+interface LensBox {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  /** Which edges of the selected cell lie on the table's outer edges. */
+  atLeft: boolean;
+  atTop: boolean;
+  atRight: boolean;
+  atBottom: boolean;
+}
+
 export function SummaryCards({
   accounts,
   profile,
@@ -92,35 +106,45 @@ export function SummaryCards({
   const currency = isCanada ? 'CAD' : 'USD';
   const formatCurrency = (value: number) => formatCurrencyWithCode(value, currency);
   const [openTile, setOpenTile] = useState<string | null>(null);
+  // The last selected figure, so its details stay visible while they close.
+  const [shownTile, setShownTile] = useState<string | null>(null);
   const [heroOpen, setHeroOpen] = useState(false);
   const heroDetailsId = useId();
   const tileDetailsId = useId();
 
   // The glass lens sits behind the selected key figure. It is placed from the
   // cell's measured offset, so it follows wrapping and font swaps. When the
-  // selection closes it fades out in place; the next selection snaps rather
-  // than sweeping in from wherever it was last.
+  // selection closes it fades out in place; the next selection appears where
+  // it is rather than sweeping in from wherever it was last. Edges on the
+  // table's outer edges settle without overshoot (see lens.ts).
   const tableRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef(new Map<string, HTMLButtonElement>());
-  const [lens, setLens] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [lens, setLens] = useState<LensBox | null>(null);
   const [animate, setAnimate] = useState(false);
 
   const measure = useCallback(() => {
     if (!openTile) return;
+    const table = tableRef.current;
     const cell = cellRefs.current.get(openTile);
-    if (!cell) return;
-    const next = {
+    if (!table || !cell) return;
+    const cellRight = table.clientWidth - cell.offsetLeft - cell.offsetWidth;
+    const cellBottom = table.clientHeight - cell.offsetTop - cell.offsetHeight;
+    const next: LensBox = {
       left: cell.offsetLeft + LENS_INSET_X,
       top: cell.offsetTop + LENS_INSET_Y,
-      width: cell.offsetWidth - LENS_INSET_X * 2,
-      height: cell.offsetHeight - LENS_INSET_Y * 2,
+      right: cellRight + LENS_INSET_X,
+      bottom: cellBottom + LENS_INSET_Y,
+      atLeft: cell.offsetLeft < 1,
+      atTop: cell.offsetTop < 1,
+      atRight: cellRight < 1,
+      atBottom: cellBottom < 1,
     };
     setLens(prev =>
       prev &&
       prev.left === next.left &&
       prev.top === next.top &&
-      prev.width === next.width &&
-      prev.height === next.height
+      prev.right === next.right &&
+      prev.bottom === next.bottom
         ? prev
         : next
     );
@@ -151,6 +175,7 @@ export function SummaryCards({
     // Opening from closed: snap to the new cell instead of sweeping in from
     // wherever the lens faded out last time.
     if (id && !openTile) setAnimate(false);
+    if (id) setShownTile(id);
     setOpenTile(id);
   };
 
@@ -376,7 +401,7 @@ export function SummaryCards({
       : []),
   ];
 
-  const activeTile = tiles.find(t => t.id === openTile);
+  const activeTile = tiles.find(t => t.id === shownTile);
 
   // Four figures sit in one row; a fifth (penalties) splits 3 + 2 until there
   // is room for all five.
@@ -455,8 +480,8 @@ export function SummaryCards({
           </button>
         </div>
 
-        {heroOpen && (
-          <div id={heroDetailsId} className="mt-3 max-w-[64ch]">
+        <Collapse open={heroOpen} id={heroDetailsId}>
+          <div className="pt-3 max-w-[64ch]">
             <Derivation formula={`Sum of all account balances after ${yearsToRetirement} years of growth`}>
               <ul className="space-y-0.5">
                 {groups.map(g => (
@@ -471,65 +496,82 @@ export function SummaryCards({
               </p>
             </Derivation>
           </div>
-        )}
+        </Collapse>
       </section>
 
       {/* During retirement: a ruled table of key figures; a glass lens marks the selected one */}
       <section aria-label="During retirement">
-        <div ref={tableRef} className={`key-figures ${columns}`}>
+        <div className="key-figures">
           {lens && (
             <span
               aria-hidden="true"
               className="key-figure-lens glass"
+              data-open={openTile ? true : undefined}
               style={{
-                ...lens,
-                opacity: openTile ? 1 : 0,
-                transitionProperty: animate ? undefined : 'opacity',
+                left: lens.left,
+                top: lens.top,
+                right: lens.right,
+                bottom: lens.bottom,
+                transition: [
+                  ...(animate
+                    ? [
+                        lensEdgeTransition('left', lens.atLeft),
+                        lensEdgeTransition('top', lens.atTop),
+                        lensEdgeTransition('right', lens.atRight),
+                        lensEdgeTransition('bottom', lens.atBottom),
+                      ]
+                    : []),
+                  LENS_APPEAR_TRANSITION,
+                ].join(', '),
               }}
             />
           )}
-          {tiles.map(tile => {
-            const isOpen = tile.id === openTile;
-            return (
-              <button
-                key={tile.id}
-                ref={el => {
-                  if (el) cellRefs.current.set(tile.id, el);
-                  else cellRefs.current.delete(tile.id);
-                }}
-                type="button"
-                onClick={() => selectTile(isOpen ? null : tile.id)}
-                aria-expanded={isOpen}
-                aria-controls={tileDetailsId}
-                className="key-figure group px-4 sm:px-5 pt-4 pb-3.5"
-              >
-                <span className="block font-serif italic text-[14.5px] leading-snug text-ink-2 underline-offset-[5px] decoration-hair-strong group-hover:underline">
-                  {tile.label}
-                </span>
-                <span
-                  className={`block num text-[1.75rem] md:text-[1.9375rem] leading-[1.1] tracking-[-0.01em] mt-2 mb-1 ${tile.valueClassName ?? 'text-ink'}`}
-                  title={tile.fullValue}
+          <div ref={tableRef} className={`key-figures-grid ${columns}`}>
+            {tiles.map(tile => {
+              const isOpen = tile.id === openTile;
+              return (
+                <button
+                  key={tile.id}
+                  ref={el => {
+                    if (el) cellRefs.current.set(tile.id, el);
+                    else cellRefs.current.delete(tile.id);
+                  }}
+                  type="button"
+                  onClick={() => selectTile(isOpen ? null : tile.id)}
+                  aria-expanded={isOpen}
+                  aria-controls={tileDetailsId}
+                  className="key-figure group px-4 sm:px-5 pt-4 pb-3.5"
                 >
-                  {tile.value}
-                  <span className="sr-only"> ({tile.fullValue})</span>
-                </span>
-                {tile.note && (
-                  <span className={`block font-serif text-[13.5px] ${tile.noteClassName ?? 'text-ink-3'}`}>{tile.note}</span>
-                )}
-              </button>
-            );
-          })}
+                  <span className="block font-serif italic text-[14.5px] leading-snug text-ink-2 underline-offset-[5px] decoration-hair-strong group-hover:underline">
+                    {tile.label}
+                  </span>
+                  <span
+                    className={`block num text-[1.75rem] md:text-[1.9375rem] leading-[1.1] tracking-[-0.01em] mt-2 mb-1 ${tile.valueClassName ?? 'text-ink'}`}
+                    title={tile.fullValue}
+                  >
+                    {tile.value}
+                    <span className="sr-only"> ({tile.fullValue})</span>
+                  </span>
+                  {tile.note && (
+                    <span className={`block font-serif text-[13.5px] ${tile.noteClassName ?? 'text-ink-3'}`}>{tile.note}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {activeTile && (
-          <div id={tileDetailsId} className="mt-3.5 pl-4 sm:pl-5 max-w-[64ch]">
-            <div className="flex items-baseline gap-3.5 mb-1 font-serif">
-              <h4 className="text-[15px] font-bold text-ink">{activeTile.label}</h4>
-              <span className="num text-[15px] text-ink">{activeTile.fullValue}</span>
+        <Collapse open={openTile !== null} id={tileDetailsId}>
+          {activeTile && (
+            <div key={activeTile.id} className="fade-in pt-3.5 pl-4 sm:pl-5 max-w-[64ch]">
+              <div className="flex items-baseline gap-3.5 mb-1 font-serif">
+                <h4 className="text-[15px] font-bold text-ink">{activeTile.label}</h4>
+                <span className="num text-[15px] text-ink">{activeTile.fullValue}</span>
+              </div>
+              <Derivation formula={activeTile.formula}>{activeTile.details}</Derivation>
             </div>
-            <Derivation formula={activeTile.formula}>{activeTile.details}</Derivation>
-          </div>
-        )}
+          )}
+        </Collapse>
       </section>
 
       <RetirementTimeline

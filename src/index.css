@@ -213,20 +213,37 @@ html {
   background-color: var(--paper);
 }
 
+html {
+  background-color: var(--paper);
+}
+
 body {
   min-height: 100vh;
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* The page light lives on its own fixed layer rather than as a fixed body
+   background: browsers (Safari especially) repaint a fixed background on every
+   scroll and it lags the content, while a fixed layer is composited once and
+   stays put. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   @apply bg-page;
+  background-attachment: scroll;
 }
 
 /* The page surface: daylight across the viewport and paper grain. The light
-   is what the glass surfaces visibly blur and what their rims catch. It is
-   fixed to the viewport, so anything else using `bg-page` (e.g. a sticky
-   table column that needs an opaque fill) lines up with the page behind it
-   seamlessly. */
+   is what the glass surfaces visibly blur and what their rims catch. The
+   page's own layer is body::before; elsewhere (e.g. a sticky table column
+   that needs an opaque fill) the background is fixed to the viewport, so it
+   lines up with the page behind it seamlessly. */
 @utility bg-page {
   background-color: var(--paper);
   background-image:
@@ -300,20 +317,24 @@ body {
 
   /* Key figures: a ruled table set on the paper (booktabs: a heavy rule above
      and below, hairlines between cells). Each cell draws its own left and top
-     hairline just outside its box; the ones on the table's outer edges fall
-     outside the clip. The glass lens is positioned behind the selected cell
-     by SummaryCards. */
+     hairline just outside its box; the inner grid clips the ones on the outer
+     edges. The glass lens sits outside that clip, behind the grid, so its
+     shadow can spill past the table's edges. SummaryCards positions it behind
+     the selected cell and sets its per-edge transitions. */
   .key-figures {
     position: relative;
-    display: grid;
-    overflow: hidden;
     border-top: 1.5px solid var(--rule);
     border-bottom: 1px solid var(--rule);
   }
 
-  .key-figure {
+  .key-figures-grid {
     position: relative;
     z-index: 1;
+    display: grid;
+    overflow: hidden;
+  }
+
+  .key-figure {
     text-align: left;
     box-shadow:
       -1px 0 0 var(--hair),
@@ -322,14 +343,98 @@ body {
 
   .key-figure-lens {
     position: absolute;
-    z-index: 0;
     border-radius: 14px;
+  }
+
+  .key-figure-lens:not([data-open]) {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  @starting-style {
+    .key-figure-lens[data-open] {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+
+  /* Collapsible region (Collapse): the height eases to the content's measured
+     height and the content fades with it. It clips only while moving. */
+  .collapsible {
+    overflow: hidden;
+    transition: height 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .collapsible[data-settled] {
+    overflow: visible;
+  }
+
+  .collapsible > div {
+    display: flow-root;
+    transition: opacity 240ms ease;
+  }
+
+  .collapsible:not([data-open]) > div {
+    opacity: 0;
+  }
+
+  .fade-in {
+    animation: fade-in 240ms ease both;
+  }
+
+  /* Menus: always mounted, so they can scale and fade out as well as in.
+     Visibility flips after the fade on close, taking the closed menu out of
+     the tab order and the accessibility tree. */
+  .popover {
+    transform-origin: top right;
     transition:
-      left 420ms cubic-bezier(0.3, 1.35, 0.5, 1),
-      top 420ms cubic-bezier(0.3, 1.35, 0.5, 1),
-      width 420ms cubic-bezier(0.3, 1.35, 0.5, 1),
-      height 420ms cubic-bezier(0.3, 1.35, 0.5, 1),
-      opacity 200ms ease;
+      opacity 160ms ease,
+      transform 260ms cubic-bezier(0.3, 1.35, 0.5, 1),
+      visibility 0s linear 0s;
+  }
+
+  .popover:not([data-open]) {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+    visibility: hidden;
+    transition:
+      opacity 140ms ease,
+      transform 160ms ease,
+      visibility 0s linear 160ms;
+  }
+
+  /* Dialogs: the scrim fades and the dialog rises into place; Modal keeps
+     them mounted until the close has played. */
+  .modal-scrim {
+    transition: opacity 200ms ease;
+  }
+
+  .modal-dialog {
+    transition:
+      opacity 200ms ease,
+      transform 320ms cubic-bezier(0.3, 1.35, 0.5, 1);
+  }
+
+  .modal-scrim:not([data-open]) {
+    opacity: 0;
+  }
+
+  .modal-scrim:not([data-open]) .modal-dialog {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+    transition-timing-function: ease;
+    transition-duration: 160ms;
+  }
+
+  @starting-style {
+    .modal-scrim[data-open] {
+      opacity: 0;
+    }
+
+    .modal-scrim[data-open] .modal-dialog {
+      opacity: 0;
+      transform: translateY(8px) scale(0.97);
+    }
   }
 
   /* Text inputs and selects: a recessed well inside the glass. */
@@ -476,7 +581,8 @@ body {
     color: var(--ink);
   }
 
-  /* Segmented control with a sliding glass lens behind the active option. */
+  /* Segmented control with a sliding glass lens behind the active option.
+     SegmentedControl sets the lens's per-edge transitions. */
   .seg {
     position: relative;
     display: flex;
@@ -494,9 +600,6 @@ body {
     border-radius: 9999px;
     background: var(--lens);
     box-shadow: var(--lens-shadow);
-    transition:
-      left 420ms cubic-bezier(0.3, 1.35, 0.5, 1),
-      width 420ms cubic-bezier(0.3, 1.35, 0.5, 1);
   }
 
   .seg-option {
@@ -525,6 +628,12 @@ body {
   .seg-sm .seg-option {
     padding: 0.25rem 0.75rem;
     font-size: 0.75rem;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
 }
 
@@ -609,6 +718,10 @@ body {
   html,
   body {
     background: #fff !important;
+  }
+
+  body::before {
+    display: none;
   }
 
   .print-report {

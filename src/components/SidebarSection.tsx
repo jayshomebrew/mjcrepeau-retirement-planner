@@ -1,4 +1,5 @@
 import { ReactNode, useId } from 'react';
+import { Collapse } from './Collapse';
 
 interface SidebarSectionProps {
   title: string;
@@ -35,11 +36,9 @@ export function SidebarSection({ title, summary, isOpen, onToggle, children }: S
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {isOpen && (
-        <div id={contentId} className="px-3 pt-1 pb-4">
-          {children}
-        </div>
-      )}
+      <Collapse open={isOpen} id={contentId}>
+        <div className="px-3 pt-1 pb-4">{children}</div>
+      </Collapse>
     </div>
   );
 }

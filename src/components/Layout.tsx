@@ -67,14 +67,14 @@ export function Layout({
       <header className="sticky top-0 z-40 px-3 sm:px-6 pt-3">
         <div className="glass rounded-[26px] max-w-7xl mx-auto flex flex-wrap items-center gap-x-4 gap-y-1.5 py-1.5 pl-5 pr-1.5">
           <h1 className="font-serif text-lg font-bold text-ink whitespace-nowrap mr-auto lg:mr-0">
-            Retirement planner
+            Retirement Planner
           </h1>
 
           {/* Below lg the strip takes its own row and scrolls sideways; a mask
               fades its clipped right edge so it reads as scrollable instead
               of cut off. */}
           {tabs && (
-            <nav className="order-last w-full -ml-3.5 pb-1 pr-6 overflow-x-auto scrollbar-hide max-lg:[mask-image:linear-gradient(to_right,#000_calc(100%-2.25rem),transparent)] lg:order-none lg:w-auto lg:ml-auto lg:mr-auto lg:pb-0 lg:pr-0">
+            <nav className="order-last w-full -ml-3.5 pb-1 pr-6 overflow-x-auto scrollbar-hide max-lg:[mask-image:linear-gradient(to_right,#000_calc(100%-2.25rem),transparent)] lg:order-none lg:w-auto lg:ml-auto lg:mr-auto lg:pb-0 lg:pr-0 lg:overflow-visible">
               {tabs}
             </nav>
           )}
@@ -104,36 +104,37 @@ export function Layout({
               </svg>
             </button>
 
-            {isMenuOpen && (
-              <div className="glass glass-strong absolute right-0 mt-2 w-64 rounded-2xl p-1.5 z-50">
-                <div className="px-2.5 pt-1.5 pb-2.5">
-                  <CountrySelector />
-                </div>
-                <div className="my-1 border-t border-hair" />
-                <ExportMenu {...exportActions} inline onAfterAction={() => setIsMenuOpen(false)} />
-                <div className="my-1 border-t border-hair" />
-                <button
-                  onClick={() => {
-                    onReset();
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full px-2.5 py-2 rounded-xl text-left text-sm text-ink hover:bg-hover flex items-center gap-3"
-                >
-                  <ResetIcon />
-                  Reset all data
-                </button>
-                <button
-                  onClick={() => {
-                    onToggleDarkMode();
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full px-2.5 py-2 rounded-xl text-left text-sm text-ink hover:bg-hover flex items-center gap-3"
-                >
-                  {isDarkMode ? <SunIcon /> : <MoonIcon />}
-                  {isDarkMode ? 'Light mode' : 'Dark mode'}
-                </button>
+            <div
+              data-open={isMenuOpen || undefined}
+              className="popover glass glass-strong absolute right-0 mt-2 w-64 rounded-2xl p-1.5 z-50"
+            >
+              <div className="px-2.5 pt-1.5 pb-2.5">
+                <CountrySelector />
               </div>
-            )}
+              <div className="my-1 border-t border-hair" />
+              <ExportMenu {...exportActions} inline onAfterAction={() => setIsMenuOpen(false)} />
+              <div className="my-1 border-t border-hair" />
+              <button
+                onClick={() => {
+                  onReset();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full px-2.5 py-2 rounded-xl text-left text-sm text-ink hover:bg-hover flex items-center gap-3"
+              >
+                <ResetIcon />
+                Reset all data
+              </button>
+              <button
+                onClick={() => {
+                  onToggleDarkMode();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full px-2.5 py-2 rounded-xl text-left text-sm text-ink hover:bg-hover flex items-center gap-3"
+              >
+                {isDarkMode ? <SunIcon /> : <MoonIcon />}
+                {isDarkMode ? 'Light mode' : 'Dark mode'}
+              </button>
+            </div>
           </div>
         </div>
       </header>

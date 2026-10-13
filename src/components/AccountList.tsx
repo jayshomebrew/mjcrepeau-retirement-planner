@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Collapse } from './Collapse';
 import { Account, Profile, getAccountTypeLabel, getTaxTreatment } from '../types';
 import { AccountForm } from './AccountForm';
 import { CHART_COLORS } from '../utils/constants';
@@ -38,7 +39,6 @@ export function AccountList({ accounts, profile, countryConfig, onAdd, onUpdate,
       onAdd(account);
     }
     setShowForm(false);
-    setEditingAccount(undefined);
   };
 
   const handleEdit = (account: Account) => {
@@ -46,16 +46,22 @@ export function AccountList({ accounts, profile, countryConfig, onAdd, onUpdate,
     setShowForm(true);
   };
 
+  const handleAdd = () => {
+    setEditingAccount(undefined);
+    setShowForm(true);
+  };
+
+  // The form keeps its account while it animates closed, so it is only
+  // replaced when the form opens again.
   const handleCancel = () => {
     setShowForm(false);
-    setEditingAccount(undefined);
   };
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
 
   return (
     <div>
-      {showForm && (
+      <Collapse open={showForm}>
         <div className="rounded-xl bg-well px-3.5 py-4 mb-3">
           <h4 className="font-serif text-base font-bold text-ink mb-3">
             {editingAccount ? 'Edit account' : 'New account'}
@@ -68,7 +74,7 @@ export function AccountList({ accounts, profile, countryConfig, onAdd, onUpdate,
             onCancel={handleCancel}
           />
         </div>
-      )}
+      </Collapse>
 
       {accounts.length === 0 && !showForm ? (
         <p className="text-ink-2 text-sm py-3">
@@ -130,11 +136,11 @@ export function AccountList({ accounts, profile, countryConfig, onAdd, onUpdate,
         </ul>
       )}
 
-      {!showForm && (
-        <button onClick={() => setShowForm(true)} className="btn btn-primary w-full mt-3">
+      <Collapse open={!showForm}>
+        <button onClick={handleAdd} className="btn btn-primary w-full mt-3">
           Add account
         </button>
-      )}
+      </Collapse>
     </div>
   );
 }

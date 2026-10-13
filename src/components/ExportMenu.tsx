@@ -167,39 +167,38 @@ export function ExportMenu({
         </svg>
       </button>
 
-      {isOpen && (
-        <div
-          role="menu"
-          className="glass glass-strong absolute right-0 mt-2 w-72 rounded-2xl p-1.5 z-50"
-        >
-          {ITEMS.map(item => (
-            <button
-              key={item.id}
-              role="menuitem"
-              onClick={() => runAction(item.id)}
-              className="w-full px-2.5 py-2 rounded-xl text-left hover:bg-hover flex items-start gap-3"
+      <div
+        role="menu"
+        data-open={isOpen || undefined}
+        className="popover glass glass-strong absolute right-0 mt-2 w-72 rounded-2xl p-1.5 z-50"
+      >
+        {ITEMS.map(item => (
+          <button
+            key={item.id}
+            role="menuitem"
+            onClick={() => runAction(item.id)}
+            className="w-full px-2.5 py-2 rounded-xl text-left hover:bg-hover flex items-start gap-3"
+          >
+            <svg
+              className="w-[18px] h-[18px] mt-0.5 shrink-0 text-ink-2"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className="w-[18px] h-[18px] mt-0.5 shrink-0 text-ink-2"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                {item.icon}
-              </svg>
-              <span>
-                <span className="block text-sm font-medium text-ink">
-                  {item.label}
-                </span>
-                <span className="block text-xs text-ink-2">
-                  {item.description}
-                </span>
+              {item.icon}
+            </svg>
+            <span>
+              <span className="block text-sm font-medium text-ink">
+                {item.label}
               </span>
-            </button>
-          ))}
-        </div>
-      )}
+              <span className="block text-xs text-ink-2">
+                {item.description}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

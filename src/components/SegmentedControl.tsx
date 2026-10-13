@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { lensEdgeTransition } from './lens';
 
 interface SegmentedControlProps<T extends string> {
   options: { id: T; label: string }[];
@@ -16,7 +17,9 @@ interface SegmentedControlProps<T extends string> {
  * The lens is positioned from the selected button's measured offset, so it
  * follows label width changes (font load, resize) without hard-coded sizes.
  * It only animates after its first placement, so it doesn't sweep in from the
- * left edge on mount.
+ * left edge on mount. Its two edges move independently, so arriving at the
+ * first or last option it squashes against the end of the track rather than
+ * overshooting past it.
  */
 export function SegmentedControl<T extends string>({
   options,
@@ -28,17 +31,16 @@ export function SegmentedControl<T extends string>({
 }: SegmentedControlProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef(new Map<T, HTMLButtonElement>());
-  const [lens, setLens] = useState<{ left: number; width: number } | null>(null);
+  const [lens, setLens] = useState<{ left: number; right: number } | null>(null);
   const [animate, setAnimate] = useState(false);
 
   const measure = useCallback(() => {
+    const container = containerRef.current;
     const button = buttonRefs.current.get(value);
-    if (!button) return;
-    setLens(prev =>
-      prev && prev.left === button.offsetLeft && prev.width === button.offsetWidth
-        ? prev
-        : { left: button.offsetLeft, width: button.offsetWidth }
-    );
+    if (!container || !button) return;
+    const left = button.offsetLeft;
+    const right = container.clientWidth - button.offsetLeft - button.offsetWidth;
+    setLens(prev => (prev && prev.left === left && prev.right === right ? prev : { left, right }));
   }, [value]);
 
   useLayoutEffect(() => {
@@ -63,10 +65,11 @@ export function SegmentedControl<T extends string>({
     }
   }, [lens, animate]);
 
+  const index = options.findIndex(o => o.id === value);
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
     event.preventDefault();
-    const index = options.findIndex(o => o.id === value);
     const step = event.key === 'ArrowRight' ? 1 : -1;
     const next = options[(index + step + options.length) % options.length];
     onChange(next.id);
@@ -87,8 +90,10 @@ export function SegmentedControl<T extends string>({
           className="seg-lens"
           style={{
             left: lens.left,
-            width: lens.width,
-            transitionProperty: animate ? undefined : 'none',
+            right: lens.right,
+            transition: animate
+              ? `${lensEdgeTransition('left', index === 0)}, ${lensEdgeTransition('right', index === options.length - 1)}`
+              : 'none',
           }}
         />
       )}

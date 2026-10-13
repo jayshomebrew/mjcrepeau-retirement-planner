@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Collapse } from './Collapse';
 import { IncomeStream, getIncomeTaxTreatmentLabel } from '../types';
 import { IncomeStreamForm } from './IncomeStreamForm';
 import { CHART_COLORS } from '../utils/constants';
@@ -38,7 +39,6 @@ export function IncomeStreamList({ incomeStreams, onAdd, onUpdate, onDelete }: I
       onAdd(stream);
     }
     setShowForm(false);
-    setEditingStream(undefined);
   };
 
   const handleEdit = (stream: IncomeStream) => {
@@ -46,16 +46,22 @@ export function IncomeStreamList({ incomeStreams, onAdd, onUpdate, onDelete }: I
     setShowForm(true);
   };
 
+  const handleAdd = () => {
+    setEditingStream(undefined);
+    setShowForm(true);
+  };
+
+  // The form keeps its stream while it animates closed, so it is only
+  // replaced when the form opens again.
   const handleCancel = () => {
     setShowForm(false);
-    setEditingStream(undefined);
   };
 
   const totalMonthly = incomeStreams.reduce((sum, s) => sum + s.monthlyAmount, 0);
 
   return (
     <div>
-      {showForm && (
+      <Collapse open={showForm}>
         <div className="rounded-xl bg-well px-3.5 py-4 mb-3">
           <h4 className="font-serif text-base font-bold text-ink mb-3">
             {editingStream ? 'Edit income stream' : 'New income stream'}
@@ -67,7 +73,7 @@ export function IncomeStreamList({ incomeStreams, onAdd, onUpdate, onDelete }: I
             onCancel={handleCancel}
           />
         </div>
-      )}
+      </Collapse>
 
       {incomeStreams.length === 0 && !showForm ? (
         <p className="text-ink-2 text-sm py-3">
@@ -131,11 +137,11 @@ export function IncomeStreamList({ incomeStreams, onAdd, onUpdate, onDelete }: I
         </ul>
       )}
 
-      {!showForm && (
-        <button onClick={() => setShowForm(true)} className="btn btn-primary w-full mt-3">
+      <Collapse open={!showForm}>
+        <button onClick={handleAdd} className="btn btn-primary w-full mt-3">
           Add income stream
         </button>
-      )}
+      </Collapse>
     </div>
   );
 }
