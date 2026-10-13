@@ -34,6 +34,8 @@ const ROW_BELOW = 42;
 const LINE_ZONE = 18;
 const GAP = 14;
 
+const pluralYears = (n: number) => `${n} ${n === 1 ? 'year' : 'years'}`;
+
 /**
  * Stack labels into rows so none overlap. Items are placed left to right in
  * the lowest row whose last label ends before this one starts.
@@ -71,8 +73,9 @@ export function RetirementTimeline({
 
   const span = Math.max(1, lifeExpectancy - currentAge);
   const pct = (age: number) => Math.min(100, Math.max(0, ((age - currentAge) / span) * 100));
-  const savingYears = retirementAge - currentAge;
-  const retiredYears = lifeExpectancy - retirementAge;
+  // Invalid ages (flagged by SummaryCards) must not draw negative spans.
+  const savingYears = Math.max(0, retirementAge - currentAge);
+  const retiredYears = Math.max(0, lifeExpectancy - retirementAge);
   const runsOutEarly = depletionAge !== undefined && depletionAge < lifeExpectancy;
 
   // Merge milestones that land on the same age ("Social Security and RMDs").
@@ -91,7 +94,7 @@ export function RetirementTimeline({
       align: 'center',
       pct: pct(currentAge + savingYears / 2),
       kind: 'span',
-      label: `${savingYears} ${savingYears === 1 ? 'year' : 'years'} saving`,
+      label: `${pluralYears(savingYears)} saving`,
     },
     {
       key: 'span-retired',
@@ -99,7 +102,7 @@ export function RetirementTimeline({
       align: 'center',
       pct: pct(retirementAge + retiredYears / 2),
       kind: 'span',
-      label: `${retiredYears} ${retiredYears === 1 ? 'year' : 'years'} retired`,
+      label: `${pluralYears(retiredYears)} retired`,
     },
     ...[...byAge.entries()]
       .sort(([a], [b]) => a - b)
@@ -190,12 +193,12 @@ export function RetirementTimeline({
       {/* Screen readers get the milestones as a list; the drawing is visual only. */}
       <ol className="sr-only">
         <li>Today: age {currentAge}</li>
-        <li>Retire: age {retirementAge}, after {savingYears} years of saving</li>
+        <li>Retire: age {retirementAge}, after {pluralYears(savingYears)} of saving</li>
         {[...byAge.entries()].sort(([a], [b]) => a - b).map(([age, labels]) => (
           <li key={age}>{labels.join(' and ')}: age {age}</li>
         ))}
         {runsOutEarly && <li>Money runs out: age {depletionAge}</li>}
-        <li>Plan ends: age {lifeExpectancy}, after {retiredYears} years of retirement</li>
+        <li>Plan ends: age {lifeExpectancy}, after {pluralYears(retiredYears)} of retirement</li>
       </ol>
 
       <div ref={containerRef} aria-hidden="true" className="relative mx-1.5" style={{ height }}>
@@ -203,7 +206,7 @@ export function RetirementTimeline({
         <div className="absolute inset-x-0 h-px bg-ink-3" style={{ top: lineY }} />
         <div
           className="absolute h-[3px] rounded-full bg-ink"
-          style={{ top: lineY - 1, left: `${pct(retirementAge)}%`, width: `${retiredEnd - pct(retirementAge)}%` }}
+          style={{ top: lineY - 1, left: `${pct(retirementAge)}%`, width: `${Math.max(0, retiredEnd - pct(retirementAge))}%` }}
         />
         {runsOutEarly && (
           <div

@@ -213,10 +213,6 @@ html {
   background-color: var(--paper);
 }
 
-html {
-  background-color: var(--paper);
-}
-
 body {
   min-height: 100vh;
   color: var(--ink);
@@ -339,6 +335,11 @@ body::before {
     box-shadow:
       -1px 0 0 var(--hair),
       0 -1px 0 var(--hair);
+  }
+
+  /* The grid clips its outer edges, so the focus ring sits inside the cell. */
+  .key-figure:focus-visible {
+    outline-offset: -2px;
   }
 
   .key-figure-lens {
@@ -620,6 +621,11 @@ body::before {
     color: var(--ink);
   }
 
+  /* Inset, so the ring isn't clipped where the strip scrolls (below lg). */
+  .seg-option:focus-visible {
+    outline-offset: -2px;
+  }
+
   .seg-option[aria-selected="true"] {
     color: var(--ink);
     transform: scale(1.04);
@@ -702,6 +708,13 @@ body::before {
 
 .print-report .glass::before {
   display: none;
+}
+
+/* The key figures pick their column count from viewport breakpoints, which
+   say nothing about the 7.5in page. Pin them to two columns so every figure
+   has room at print size. */
+.print-report .print-summary .key-figures-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media print {

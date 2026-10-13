@@ -54,7 +54,7 @@ const VIEW_OPTIONS: { id: ViewMode; label: string }[] = [
  * than the rows so the sticky age column carries its own rules when the table
  * scrolls sideways.
  */
-const TABLE = 'min-w-full border-separate border-spacing-0 border-y-[1.5px] border-ink/60 text-sm';
+const TABLE = 'min-w-full border-separate border-spacing-0 border-y-[1.5px] border-rule text-sm';
 const TBODY = '[&>tr:last-child>td]:border-b-0';
 const ROW = 'group hover:bg-hover';
 const CELL = 'py-2 px-2';
@@ -207,7 +207,7 @@ export function DataTableWithdrawal({
               <tfoot>
                 <tr>
                   <td className={TF_LABEL}>Lifetime total</td>
-                  <td className={`${TF} text-right text-ink-2`}>-</td>
+                  <td className={`${TF} text-right text-ink-2`}>–</td>
                   <td className={`${TF} text-right text-ink`}>
                     {formatCurrency(result.yearlyWithdrawals.reduce((sum, y) => sum + y.totalWithdrawal, 0))}
                   </td>
@@ -301,7 +301,7 @@ export function DataTableWithdrawal({
                   <th className={TH_AGE}>Age</th>
                   <th className={`${TH} text-right text-ink-2`}>Gross income</th>
                   <th className={`${TH} text-right text-tax`}>Federal tax</th>
-                  <th className={`${TH} text-right text-tax`}>State tax</th>
+                  <th className={`${TH} text-right text-tax`}>{country === 'CA' ? 'Provincial tax' : 'State tax'}</th>
                   <th className={`${TH} text-right text-bad`}>Penalties</th>
                   <th className={`${TH} text-right text-tax`}>Total tax</th>
                   <th className={`${TH} text-right text-ink-2`}>Effective rate</th>
@@ -433,7 +433,7 @@ export function DataTableWithdrawal({
                       <td className={TD_AGE}>{yearData.age}</td>
                       {incomeStreams.map(stream => {
                         if (yearData.age < stream.startAge || (stream.endAge && yearData.age > stream.endAge) || totalMonthly === 0) {
-                          return <td key={stream.id} className={`${TD} text-right text-ink-2`}>-</td>;
+                          return <td key={stream.id} className={`${TD} text-right text-ink-2`}>–</td>;
                         }
                         const ratio = stream.monthlyAmount / totalMonthly;
                         const amount = yearData.incomeStreamIncome * ratio;

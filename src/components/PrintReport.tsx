@@ -158,7 +158,7 @@ export function PrintReport({
         </p>
       </header>
 
-      <Section title="Plan Inputs">
+      <Section title="Plan inputs">
         <div className="grid grid-cols-2 gap-x-8 mb-6">
           <div>
             <h3 className="text-sm font-semibold text-gray-800 mb-1">Profile</h3>
@@ -210,32 +210,32 @@ export function PrintReport({
         </div>
         <div className="print-block mt-6">
           <h3 className="font-serif text-base font-bold text-gray-900 mb-2">
-            Portfolio Composition at Retirement
+            Portfolio composition at retirement
           </h3>
           <ChartComposition accounts={accounts} result={accumulation} animate={false} />
         </div>
       </Section>
 
-      <Section title="Accumulation Phase">
+      <Section title="Accumulation phase">
         <div className="print-block mb-6">
           <h3 className="font-serif text-base font-bold text-gray-900 mb-2">
-            Account Growth (Age {profile.currentAge} to {profile.retirementAge})
+            Account growth (age {profile.currentAge} to {profile.retirementAge})
           </h3>
           <ChartAccumulation accounts={accounts} result={accumulation} animate={false} />
         </div>
         <PrintTable table={buildAccumulationTable('summary', accounts, accumulation, meta)} />
       </Section>
 
-      <Section title="Retirement Phase">
+      <Section title="Retirement phase">
         <div className="print-block mb-6">
           <h3 className="font-serif text-base font-bold text-gray-900 mb-2">
-            Portfolio Drawdown (Age {profile.retirementAge} to {profile.lifeExpectancy})
+            Portfolio drawdown (age {profile.retirementAge} to {profile.lifeExpectancy})
           </h3>
           <ChartDrawdown accounts={accounts} result={retirement} animate={false} />
         </div>
         <div className="print-block mb-6">
           <h3 className="font-serif text-base font-bold text-gray-900 mb-2">
-            Annual Retirement Income
+            Annual retirement income
           </h3>
           <ChartIncome result={retirement} incomeStreams={incomeStreams} animate={false} />
         </div>
@@ -246,7 +246,7 @@ export function PrintReport({
 
       <Section title="Taxes">
         <div className="print-block mb-6">
-          <h3 className="font-serif text-base font-bold text-gray-900 mb-2">Tax Burden Over Time</h3>
+          <h3 className="font-serif text-base font-bold text-gray-900 mb-2">Tax burden over time</h3>
           <ChartTax result={retirement} animate={false} />
         </div>
         <PrintTable

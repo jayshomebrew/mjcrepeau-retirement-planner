@@ -14,8 +14,10 @@ export function formatCurrency(value: number, currency: string = 'USD'): string 
  * 999,960 reads "$1.00M" rather than "$1000.0k".
  */
 export function formatCompactCurrency(value: number): string {
-  const sign = value < 0 ? '-' : '';
+  if (!Number.isFinite(value)) return '–';
   const abs = Math.abs(value);
+  // No "-$0" for tiny negatives that round away.
+  const sign = value < 0 && Math.round(abs) > 0 ? '-' : '';
 
   if (Math.round(abs) < 1000) return `${sign}$${Math.round(abs)}`;
   if (Number((abs / 1e3).toFixed(1)) < 1000) return `${sign}$${(abs / 1e3).toFixed(1)}k`;
@@ -46,16 +48,21 @@ export function formatAxisCurrency(value: number): string {
  * is not applied consistently across chart types (a composed chart with two
  * axes ends up with ticks at raw quarters of the data maximum), so every
  * chart sets its domain and ticks explicitly from this.
+ *
+ * The step never drops below `minStep` (a whole dollar by default), so a
+ * near-zero series doesn't get fractional ticks that format to repeated
+ * labels like "$0, $1, $1, $2".
  */
-export function niceTicks(max: number, count = 4): { domain: [number, number]; ticks: number[] } {
-  if (!(max > 0)) return { domain: [0, 1], ticks: [0, 1] };
+export function niceTicks(max: number, count = 4, minStep = 1): { domain: [number, number]; ticks: number[] } {
+  if (!Number.isFinite(max) || !(max > 0)) return { domain: [0, minStep], ticks: [0, minStep] };
   const rough = max / count;
   const magnitude = 10 ** Math.floor(Math.log10(rough));
   const residual = rough / magnitude;
   const factor = residual <= 1 ? 1 : residual <= 2 ? 2 : residual <= 2.5 ? 2.5 : residual <= 5 ? 5 : 10;
-  const step = factor * magnitude;
-  const top = Math.ceil(max / step - 1e-9) * step;
-  const ticks: number[] = [];
-  for (let i = 0; i * step <= top + 1e-9; i++) ticks.push(Number((i * step).toFixed(10)));
-  return { domain: [0, top], ticks };
+  const step = Math.max(minStep, factor * magnitude);
+  // Number of steps to reach `max`; the tolerance absorbs float residue so a
+  // max that is already a whole number of steps doesn't gain an extra one.
+  const steps = Math.max(1, Math.ceil(max / step - 1e-9));
+  const ticks = Array.from({ length: steps + 1 }, (_, i) => Number((i * step).toFixed(10)));
+  return { domain: [0, ticks[steps]], ticks };
 }

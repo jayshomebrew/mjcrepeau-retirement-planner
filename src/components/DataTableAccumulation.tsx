@@ -38,7 +38,7 @@ const VIEW_OPTIONS: { id: ViewMode; label: string }[] = [
  * than the rows so the sticky age column carries its own rules when the table
  * scrolls sideways.
  */
-const TABLE = 'min-w-full border-separate border-spacing-0 border-y-[1.5px] border-ink/60 text-sm';
+const TABLE = 'min-w-full border-separate border-spacing-0 border-y-[1.5px] border-rule text-sm';
 const TBODY = '[&>tr:last-child>td]:border-b-0';
 const ROW = 'group hover:bg-hover';
 const CELL = 'py-2 px-2';

@@ -142,7 +142,7 @@ const FIGURE = `${CELL} num text-right text-ink`;
 function BooktabsTable({ columns, children }: { columns: Column[]; children: ReactNode }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-y-[1.5px] border-ink/60">
+      <table className="w-full border-y-[1.5px] border-rule">
         <thead>
           <tr className="border-b border-hair-strong">
             {columns.map(column => (

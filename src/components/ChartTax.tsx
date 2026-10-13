@@ -13,6 +13,7 @@ import { AXIS_PROPS, BAR_CURSOR, CHART_THEME, TOOLTIP_CLASS, LEGEND_PROPS, curre
 import { niceTicks } from '../utils/format';
 import { RetirementResult } from '../types';
 import { CHART_COLORS } from '../utils/constants';
+import { useCountry } from '../contexts/CountryContext';
 
 interface ChartTaxProps {
   result: RetirementResult;
@@ -37,9 +38,10 @@ interface CustomTooltipProps {
   payload?: Array<{ name: string; value: number; color: string }>;
   label?: number;
   result: RetirementResult;
+  regionalLabel: string;
 }
 
-function CustomTooltip({ active, payload, label, result }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, label, result, regionalLabel }: CustomTooltipProps) {
   if (!active || !payload) return null;
 
   const yearData = result.yearlyWithdrawals.find(y => y.age === label);
@@ -58,7 +60,7 @@ function CustomTooltip({ active, payload, label, result }: CustomTooltipProps) {
           <span className="num text-ink">{formatTooltipValue(yearData.federalTax)}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <span style={{ color: CHART_COLORS.hsa }}>State tax</span>
+          <span style={{ color: CHART_COLORS.hsa }}>{regionalLabel}</span>
           <span className="num text-ink">{formatTooltipValue(yearData.stateTax)}</span>
         </div>
         {yearData.totalPenalties > 0 && (
@@ -83,6 +85,9 @@ function CustomTooltip({ active, payload, label, result }: CustomTooltipProps) {
 }
 
 export function ChartTax({ result, animate = true }: ChartTaxProps) {
+  const { country } = useCountry();
+  const regionalLabel = country === 'CA' ? 'Provincial tax' : 'State tax';
+
   // Transform data for the chart
   const chartData = result.yearlyWithdrawals.map(year => {
     const effectiveRate = year.grossIncome > 0
@@ -120,7 +125,7 @@ export function ChartTax({ result, animate = true }: ChartTaxProps) {
             {...rateAxis}
             width={44}
           />
-          <Tooltip content={<CustomTooltip result={result} />} cursor={BAR_CURSOR} />
+          <Tooltip content={<CustomTooltip result={result} regionalLabel={regionalLabel} />} cursor={BAR_CURSOR} />
           <Legend
             {...LEGEND_PROPS}
             formatter={(value) => <span style={{ color: CHART_THEME.legend }}>{value}</span>}
@@ -138,7 +143,7 @@ export function ChartTax({ result, animate = true }: ChartTaxProps) {
             isAnimationActive={animate}
             yAxisId="left"
             dataKey="stateTax"
-            name="State tax"
+            name={regionalLabel}
             stackId="tax"
             fill={CHART_COLORS.hsa}
             fillOpacity={0.85}

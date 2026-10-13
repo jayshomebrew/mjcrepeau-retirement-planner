@@ -193,10 +193,13 @@ export function SummaryCards({
   const hasInvalidAges = profile.lifeExpectancy <= profile.retirementAge ||
     profile.retirementAge <= profile.currentAge;
 
-  const depletesEarly =
-    portfolioDepletionAge !== null &&
-    portfolioDepletionAge !== undefined &&
-    portfolioDepletionAge < profile.lifeExpectancy;
+  // The simulation runs through the life-expectancy year, so the portfolio can
+  // run out early, run out in that final year, or never run out.
+  const depletes = portfolioDepletionAge !== null && portfolioDepletionAge !== undefined;
+  const depletesEarly = depletes && portfolioDepletionAge < profile.lifeExpectancy;
+  const depletesAtEnd = depletes && !depletesEarly;
+  const yearsShort = depletesEarly ? profile.lifeExpectancy - portfolioDepletionAge : 0;
+  const yearsShortText = `${yearsShort} ${yearsShort === 1 ? 'year' : 'years'}`;
 
   const standardDeduction = profile.filingStatus === 'married_filing_jointly'
     ? STANDARD_DEDUCTION_MFJ
@@ -317,11 +320,13 @@ export function SummaryCards({
       label: 'Portfolio lasts',
       fullValue: portfolioDepletionAge ? `Until age ${portfolioDepletionAge}` : `Past age ${profile.lifeExpectancy}`,
       value: portfolioDepletionAge ? `Age ${portfolioDepletionAge}` : `Past ${profile.lifeExpectancy}`,
-      valueClassName: depletesEarly ? 'text-bad' : undefined,
+      valueClassName: depletesEarly ? 'text-bad' : depletesAtEnd ? 'text-warn' : undefined,
       note: depletesEarly
-        ? `Runs out ${profile.lifeExpectancy - portfolioDepletionAge!} years early`
-        : 'Never runs out',
-      noteClassName: depletesEarly ? 'text-bad' : undefined,
+        ? `Runs out ${yearsShortText} early`
+        : depletesAtEnd
+          ? 'Runs out in the final year'
+          : 'Never runs out',
+      noteClassName: depletesEarly ? 'text-bad' : depletesAtEnd ? 'text-warn' : undefined,
       formula: 'Simulated year by year until the balance reaches $0',
       details: (
         <>
@@ -331,8 +336,12 @@ export function SummaryCards({
           </p>
           {depletesEarly ? (
             <p className="text-bad">
-              The portfolio runs out {profile.lifeExpectancy - portfolioDepletionAge!} years before your planned life
-              expectancy.
+              The portfolio runs out {yearsShortText} before your planned life expectancy.
+            </p>
+          ) : depletesAtEnd ? (
+            <p className="text-warn">
+              The portfolio runs out at age {portfolioDepletionAge}, the final year of the plan, leaving no margin
+              for a longer life or weaker returns.
             </p>
           ) : (
             <p className="text-good">
@@ -400,6 +409,10 @@ export function SummaryCards({
         } satisfies Tile]
       : []),
   ];
+
+  // A figure can disappear while selected (penalties drop to zero after an
+  // input change); clear the selection so the lens and details close with it.
+  if (openTile && !tiles.some(t => t.id === openTile)) setOpenTile(null);
 
   const activeTile = tiles.find(t => t.id === shownTile);
 
@@ -584,8 +597,8 @@ export function SummaryCards({
 
       {depletesEarly && (
         <Callout tone="bad" title="Your portfolio runs out early">
-          It's projected to run out at age {portfolioDepletionAge}, {profile.lifeExpectancy - portfolioDepletionAge!}{' '}
-          years before your planned life expectancy. Saving more, lowering the withdrawal rate, or retiring later would
+          It's projected to run out at age {portfolioDepletionAge}, {yearsShortText} before your planned life
+          expectancy. Saving more, lowering the withdrawal rate, or retiring later would
           extend it.
         </Callout>
       )}
